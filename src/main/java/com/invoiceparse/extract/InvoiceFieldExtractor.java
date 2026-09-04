@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 public class InvoiceFieldExtractor {
     private static final Pattern GSTIN = Pattern.compile("(?i)\\b[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]\\b");
     private static final Pattern DATE = Pattern.compile("(?i)\\b(?:\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4}|\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[- ](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]\\d{2,4})\\b");
+    private static final Pattern GST_CONTEXT = Pattern.compile("(?i)\\b(?:GST\\s*INVOICE|GSTIN|CGST|SGST|IGST)\\b");
+    private static final Pattern CUSTOMER_GST_LABEL = Pattern.compile("(?i)\\b(?:customer|buyer|recipient|bill\\s*to)\\s*GSTI[NM]\\b");
     private final LineItemExtractor lineItemExtractor;
 
     public InvoiceFieldExtractor(LineItemExtractor lineItemExtractor) { this.lineItemExtractor = lineItemExtractor; }
@@ -55,6 +57,9 @@ public class InvoiceFieldExtractor {
         else if (content.text().matches("(?is).*\\bEUR\\b.*|.*€.*")) invoice.currency = "EUR";
         else if (content.text().matches("(?is).*\\bGBP\\b.*|.*£.*")) invoice.currency = "GBP";
         invoice.lineItems = lineItemExtractor.extract(lines);
+        boolean gstInvoice = GST_CONTEXT.matcher(content.text()).find();
+        if (gstInvoice) invoice.expectedFields.add("supplierGstin");
+        if (CUSTOMER_GST_LABEL.matcher(content.text()).find()) invoice.expectedFields.add("customerGstin");
         double fieldConfidence = content.sourceType() == com.invoiceparse.model.SourceType.DIGITAL_PDF ? 0.92 :
                 Math.max(0.50, content.tokens().stream().mapToDouble(t -> t.confidence()).average().orElse(0.70));
         putConfidence(invoice, "invoiceNumber", invoice.invoiceNumber, fieldConfidence);
@@ -72,6 +77,13 @@ public class InvoiceFieldExtractor {
         putConfidence(invoice, "taxableAmount", invoice.taxableAmount, fieldConfidence);
         putConfidence(invoice, "roundOff", invoice.roundOff, fieldConfidence);
         putConfidence(invoice, "grandTotal", invoice.grandTotal, fieldConfidence);
+        for (String expected : invoice.expectedFields) {
+            if ((expected.equals("supplierGstin") && invoice.supplierGstin == null)
+                    || (expected.equals("customerGstin") && invoice.customerGstin == null)) {
+                invoice.fieldConfidences.put(expected, 0.0);
+                invoice.warnings.add(displayName(expected) + " was expected but could not be extracted");
+            }
+        }
         long present = Arrays.asList(invoice.invoiceNumber, invoice.invoiceDate, invoice.supplierName,
                 invoice.grandTotal).stream().filter(v -> v != null).count();
         invoice.extractionConfidence = Math.min(0.96, 0.45 + present * 0.10 + (invoice.lineItems.isEmpty() ? 0 : 0.10));
@@ -84,6 +96,10 @@ public class InvoiceFieldExtractor {
 
     private void putConfidence(ParsedInvoice invoice, String field, Object value, double confidence) {
         if (value != null) invoice.fieldConfidences.put(field, Math.round(Math.max(0, confidence) * 100.0) / 100.0);
+    }
+
+    private String displayName(String field) {
+        return field.equals("supplierGstin") ? "Supplier GSTIN" : "Customer GSTIN";
     }
 
     private List<String> normalize(String text) {

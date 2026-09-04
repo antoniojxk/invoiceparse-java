@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class TesseractCliOcrEngine implements OcrEngine {
@@ -20,24 +20,41 @@ public class TesseractCliOcrEngine implements OcrEngine {
 
     @Override
     public OcrResult recognize(BufferedImage image, int page) {
-        Path temp = null;
+        Path imageFile = null;
+        Path outputFile = null;
+        Path errorFile = null;
+        Process process = null;
         try {
-            temp = Files.createTempFile("invoiceparse-", ".png");
-            ImageIO.write(image, "png", temp.toFile());
-            var process = new ProcessBuilder(properties.tesseractCommand(), temp.toString(), "stdout",
+            imageFile = Files.createTempFile("invoiceparse-", ".png");
+            outputFile = Files.createTempFile("invoiceparse-ocr-", ".tsv");
+            errorFile = Files.createTempFile("invoiceparse-ocr-", ".log");
+            if (!ImageIO.write(image, "png", imageFile.toFile())) {
+                throw new DocumentProcessingException("OCR_FAILED", "The image could not be prepared for OCR");
+            }
+            process = new ProcessBuilder(properties.tesseractCommand(), imageFile.toString(), "stdout",
                     "-l", properties.tesseractLanguage(), "--psm", "6", "tsv")
-                    .redirectErrorStream(true).start();
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            int exit = process.waitFor();
-            if (exit != 0) throw new DocumentProcessingException("OCR_FAILED", "Tesseract OCR failed: " + safeMessage(output));
+                    .redirectOutput(outputFile.toFile()).redirectError(errorFile.toFile()).start();
+            if (!process.waitFor(properties.ocrTimeoutSeconds(), TimeUnit.SECONDS)) {
+                process.destroy();
+                if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly();
+                throw new DocumentProcessingException("OCR_TIMEOUT",
+                        "Tesseract OCR exceeded the " + properties.ocrTimeoutSeconds() + " second limit");
+            }
+            String output = Files.readString(outputFile);
+            if (process.exitValue() != 0) {
+                throw new DocumentProcessingException("OCR_FAILED", "Tesseract OCR failed: " + safeMessage(Files.readString(errorFile)));
+            }
             return parseTsv(output, page);
         } catch (IOException e) {
             throw new DocumentProcessingException("OCR_FAILED", "Tesseract is unavailable or could not read the image", e);
         } catch (InterruptedException e) {
+            if (process != null) process.destroyForcibly();
             Thread.currentThread().interrupt();
             throw new DocumentProcessingException("OCR_FAILED", "OCR was interrupted", e);
         } finally {
-            if (temp != null) try { Files.deleteIfExists(temp); } catch (IOException ignored) { }
+            deleteQuietly(imageFile);
+            deleteQuietly(outputFile);
+            deleteQuietly(errorFile);
         }
     }
 
@@ -69,5 +86,9 @@ public class TesseractCliOcrEngine implements OcrEngine {
     private String safeMessage(String value) {
         String oneLine = value == null ? "unknown error" : value.replaceAll("\\s+", " ").trim();
         return oneLine.substring(0, Math.min(oneLine.length(), 200));
+    }
+
+    private void deleteQuietly(Path path) {
+        if (path != null) try { Files.deleteIfExists(path); } catch (IOException ignored) { }
     }
 }

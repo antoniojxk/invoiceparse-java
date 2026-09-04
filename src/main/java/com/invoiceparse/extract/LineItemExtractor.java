@@ -66,11 +66,11 @@ public class LineItemExtractor {
 
     private LineItemResponse parseDelimited(String line, List<Column> columns) {
         String[] cells = line.contains("|") ? line.split("\\s*\\|\\s*") : line.trim().split("\\s{2,}");
-        if (cells.length < 3) return parseByNumericTail(line);
+        if (cells.length < 3) return parseByNumericTail(line, columns);
         var values = new java.util.HashMap<String, String>();
         if (cells.length == columns.size()) {
             for (int i = 0; i < cells.length; i++) values.put(columns.get(i).name, cells[i].trim());
-        } else return parseByNumericTail(line);
+        } else return parseByNumericTail(line, columns);
         String description = values.get("description");
         BigDecimal quantity = num(values.get("quantity")), rate = num(values.get("rate")), total = num(values.get("total"));
         if (description == null || description.isBlank() || quantity == null || total == null) return null;
@@ -79,17 +79,24 @@ public class LineItemExtractor {
                 num(values.get("discount")), num(values.get("gst")), num(values.get("taxable")), total, 0.82);
     }
 
-    private LineItemResponse parseByNumericTail(String line) {
+    private LineItemResponse parseByNumericTail(String line, List<Column> columns) {
+        // This fallback is intentionally limited to the unambiguous Description/Qty/Rate/Total shape.
+        // Richer layouts must preserve delimiters so HSN, tax, discount, or batch values cannot shift columns.
+        var names = columns.stream().map(Column::name).collect(java.util.stream.Collectors.toSet());
+        if (!names.equals(java.util.Set.of("description", "quantity", "rate", "total"))) return null;
         String[] cells = line.trim().split("\\s+");
         if (cells.length < 4) return null;
         var numeric = new ArrayList<Integer>();
         for (int i = 0; i < cells.length; i++) if (NumberNormalizer.parse(cells[i]).isPresent()) numeric.add(i);
         if (numeric.size() < 3) return null;
         int q = numeric.get(numeric.size() - 3), r = numeric.get(numeric.size() - 2), t = numeric.get(numeric.size() - 1);
-        if (q == 0) return null;
+        if (q == 0 || r != q + 1 || t != r + 1 || t != cells.length - 1) return null;
+        BigDecimal quantity = num(cells[q]), rate = num(cells[r]), total = num(cells[t]);
+        if (quantity == null || rate == null || total == null || quantity.signum() < 0 || rate.signum() < 0 || total.signum() < 0) return null;
+        if (quantity.multiply(rate).subtract(total).abs().compareTo(new BigDecimal("0.10")) > 0) return null;
         String description = String.join(" ", java.util.Arrays.copyOfRange(cells, 0, q));
-        return new LineItemResponse(description, description, null, null, null, num(cells[q]), null,
-                num(cells[r]), null, null, null, num(cells[t]), 0.65);
+        return new LineItemResponse(description, description, null, null, null, quantity, null,
+                rate, null, null, null, total, 0.65);
     }
 
     private BigDecimal num(String value) { return NumberNormalizer.parse(value).orElse(null); }

@@ -8,7 +8,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DocumentContentExtractorTest {
-    private final InvoiceParseProperties properties = new InvoiceParseProperties(20, 72, "tesseract", "eng", .7, 1);
+    private final InvoiceParseProperties properties = new InvoiceParseProperties(20, 72, "tesseract", "eng", 60, .7, .1);
 
     @Test void usesTextLayerForDigitalPdf() {
         OcrEngine mustNotRun = (image, page) -> { throw new AssertionError("OCR should not run"); };

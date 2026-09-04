@@ -10,6 +10,8 @@ class NormalizerTest {
         assertThat(NumberNormalizer.parse("Rs. 1,23,456.78")).contains(new BigDecimal("123456.78"));
         assertThat(NumberNormalizer.parse("(42.50)")).contains(new BigDecimal("-42.50"));
         assertThat(NumberNormalizer.parse("many")).isEmpty();
+        assertThat(NumberNormalizer.parse("A4")).isEmpty();
+        assertThat(NumberNormalizer.parse("1O0.00")).isEmpty();
     }
     @Test void normalizesCommonInvoiceDates() {
         assertThat(DateNormalizer.parse("7/08/2026")).contains(LocalDate.of(2026, 8, 7));

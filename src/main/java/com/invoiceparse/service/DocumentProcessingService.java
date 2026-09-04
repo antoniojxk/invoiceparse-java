@@ -3,7 +3,6 @@ package com.invoiceparse.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.invoiceparse.api.ParseDocumentResponse;
-import com.invoiceparse.config.InvoiceParseProperties;
 import com.invoiceparse.exception.DocumentProcessingException;
 import com.invoiceparse.extract.DocumentContentExtractor;
 import com.invoiceparse.extract.FileTypeDetector;
@@ -12,6 +11,7 @@ import com.invoiceparse.model.DocumentType;
 import com.invoiceparse.persistence.DocumentRecord;
 import com.invoiceparse.persistence.DocumentRecordRepository;
 import com.invoiceparse.validation.InvoiceValidator;
+import com.invoiceparse.validation.ConfidenceAssessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,15 +34,17 @@ public class DocumentProcessingService {
     private final DocumentContentExtractor contentExtractor;
     private final InvoiceFieldExtractor invoiceExtractor;
     private final InvoiceValidator validator;
+    private final ConfidenceAssessor confidenceAssessor;
     private final DocumentRecordRepository repository;
     private final ObjectMapper objectMapper;
-    private final InvoiceParseProperties properties;
 
     public DocumentProcessingService(FileTypeDetector fileTypes, DocumentContentExtractor contentExtractor,
-            InvoiceFieldExtractor invoiceExtractor, InvoiceValidator validator, DocumentRecordRepository repository,
-            ObjectMapper objectMapper, InvoiceParseProperties properties) {
+            InvoiceFieldExtractor invoiceExtractor, InvoiceValidator validator, ConfidenceAssessor confidenceAssessor,
+            DocumentRecordRepository repository,
+            ObjectMapper objectMapper) {
         this.fileTypes = fileTypes; this.contentExtractor = contentExtractor; this.invoiceExtractor = invoiceExtractor;
-        this.validator = validator; this.repository = repository; this.objectMapper = objectMapper; this.properties = properties;
+        this.validator = validator; this.confidenceAssessor = confidenceAssessor; this.repository = repository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -64,15 +66,9 @@ public class DocumentProcessingService {
         var validation = validator.validate(invoice);
         var warnings = new ArrayList<>(invoice.warnings);
         validation.stream().filter(v -> !v.valid()).map(v -> v.message() + " (" + v.field() + ")").forEach(warnings::add);
-        double confidence = invoice.extractionConfidence;
-        if (!content.tokens().isEmpty()) {
-            double sourceConfidence = content.tokens().stream().mapToDouble(t -> t.confidence()).average().orElse(1.0);
-            confidence = Math.max(0, Math.min(0.99, confidence * 0.8 + sourceConfidence * 0.2));
-        }
-        long invalid = validation.stream().filter(v -> !v.valid()).count();
-        confidence = Math.max(0, confidence - invalid * 0.08);
-        confidence = Math.round(confidence * 100.0) / 100.0;
-        boolean manualReview = confidence < properties.minimumOverallConfidence() || !warnings.isEmpty() || invalid > 0;
+        var assessment = confidenceAssessor.assess(invoice, content, validation);
+        double confidence = assessment.overallConfidence();
+        boolean manualReview = assessment.manualReviewRequired();
         DocumentType documentType = invoice.invoiceNumber != null || invoice.grandTotal != null ? DocumentType.INVOICE : DocumentType.UNKNOWN;
         UUID id = UUID.randomUUID();
         String filename = safeFilename(file.getOriginalFilename());

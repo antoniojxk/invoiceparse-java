@@ -12,7 +12,9 @@ This is an honest invoice-focused baseline intended for evaluation and extension
 - Generic label aliases and regex extraction, with no supplier-specific templates
 - Basic line-item detection for common Description/Product, Quantity, Rate, Tax, and Amount columns
 - GSTIN, date, numeric, non-negative value, line-total, and invoice-total validation
-- Field/source-informed confidence, warnings, and a manual-review flag
+- Field/source-informed confidence, expected-field coverage, warnings, and a manual-review flag
+- Conservative review safeguards when GSTINs are expected but missing or invoice arithmetic is inconsistent
+- Configurable hard timeout for every Tesseract page process
 - SHA-256 duplicate detection backed by PostgreSQL
 - Flyway migrations, Actuator health, OpenAPI/Swagger UI, Docker, and Docker Compose
 - Synthetic sample invoices and expected result fixtures
@@ -125,7 +127,7 @@ Example (abbreviated) response:
 }
 ```
 
-Optional fields remain present as JSON `null`. Invalid extracted values normally create a validation result, warning, and manual-review flag instead of failing the request. Invalid files, OCR execution failures, and unreadable content use a consistent error shape with `timestamp`, HTTP `status`, machine-readable `code`, `message`, `path`, and `details`.
+Optional fields remain present as JSON `null`. Invalid extracted values normally create a validation result, warning, and manual-review flag instead of failing the request. For GST invoices, an expected but unreadable GSTIN is represented by `0.0` in `fieldConfidences` and forces review; high average OCR confidence does not override missing expected fields or failed arithmetic. Invalid files, OCR execution failures/timeouts, and unreadable content use a consistent error shape with `timestamp`, HTTP `status`, machine-readable `code`, `message`, `path`, and `details`.
 
 ## Local development
 
@@ -154,8 +156,9 @@ Important configuration variables:
 | `PDF_RENDER_DPI` | `250` | Scanned-PDF OCR render resolution |
 | `TESSERACT_COMMAND` | `tesseract` | Executable name or path |
 | `TESSERACT_LANGUAGE` | `eng` | Installed Tesseract language |
+| `OCR_TIMEOUT_SECONDS` | `60` | Hard limit for each page OCR process |
 | `MINIMUM_OVERALL_CONFIDENCE` | `0.70` | Manual-review threshold |
-| `TOTAL_TOLERANCE` | `1.00` | Allowed arithmetic difference |
+| `TOTAL_TOLERANCE` | `0.10` | Allowed arithmetic difference |
 
 No API keys or paid cloud services are required. The service does not log extracted document text.
 
@@ -177,7 +180,9 @@ java -Djava.awt.headless=true tools/SampleInvoiceGenerator.java
 mvn test
 ```
 
-The suite covers digital/scanned PDF routing, signature validation, GSTIN validation, date and amount normalization, header extraction, two line-item layouts, line/invoice total validation, API errors, persistence, and duplicate detection. The Docker smoke test described under Quick start exercises real PostgreSQL and Tesseract.
+The suite covers digital/scanned PDF routing, signature validation, GSTIN validation, date and amount normalization, header extraction, two line-item layouts, constrained numeric-tail behavior, line/invoice total validation, OCR timeout enforcement, confidence/review regression cases, API errors, persistence, and duplicate detection. The Docker smoke test described under Quick start exercises real PostgreSQL and Tesseract.
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs `mvn test` on Java 21 for every push and pull request.
 
 ## Project structure
 
@@ -200,7 +205,7 @@ tools/                          dependency-free sample generator
 ## Current limitations
 
 - The parser recognizes invoices only; `documentType` is `INVOICE` or `UNKNOWN` rather than a broad document classifier.
-- Generic regex and row heuristics work best on conventional labels and clean, single-line item rows. Merged cells, nested tables, handwriting, complex multi-page continuations, and unusual labels may require manual review.
+- Generic regex and row heuristics work best on conventional labels and clean, single-line item rows. The undelimited numeric-tail fallback is intentionally limited to Description/Quantity/Rate/Total rows with consistent arithmetic; richer layouts need recoverable delimiters or future geometric reconstruction.
 - Positional tokens are retained, but robust geometric table reconstruction and cross-page table stitching are future work.
 - OCR uses English data and no deskew/denoise stage by default. Install/configure additional Tesseract languages as needed.
 - GSTIN validation checks the official-looking 15-character structure, not registration existence or checksum ownership.

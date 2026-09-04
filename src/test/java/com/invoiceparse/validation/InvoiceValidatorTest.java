@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class InvoiceValidatorTest {
     private final InvoiceValidator validator = new InvoiceValidator(new GstinValidator(),
-            new InvoiceParseProperties(40, 250, "tesseract", "eng", .7, 1));
+            new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1));
     @Test void validatesLineAndInvoiceArithmetic() {
         var invoice = new ParsedInvoice();
         invoice.supplierGstin = "27ABCDE1234F1Z5";
@@ -23,6 +23,13 @@ class InvoiceValidatorTest {
     }
     @Test void flagsInconsistentTotal() {
         var invoice = new ParsedInvoice(); invoice.subtotal = new BigDecimal("100"); invoice.grandTotal = new BigDecimal("130");
+        assertThat(validator.validate(invoice)).anyMatch(v -> v.code().equals("INVOICE_TOTAL") && !v.valid());
+    }
+    @Test void flagsOcrScaleErrorOutsideTenPaiseTolerance() {
+        var invoice = new ParsedInvoice();
+        invoice.subtotal = new BigDecimal("1950.00");
+        invoice.igst = new BigDecimal("351.60");
+        invoice.grandTotal = new BigDecimal("2301.00");
         assertThat(validator.validate(invoice)).anyMatch(v -> v.code().equals("INVOICE_TOTAL") && !v.valid());
     }
 }

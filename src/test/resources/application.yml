@@ -15,5 +15,6 @@ invoiceparse:
   pdf-render-dpi: 120
   tesseract-command: tesseract
   tesseract-language: eng
+  ocr-timeout-seconds: 10
   minimum-overall-confidence: 0.70
-  total-tolerance: 1.00
+  total-tolerance: 0.10

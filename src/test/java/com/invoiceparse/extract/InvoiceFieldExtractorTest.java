@@ -66,5 +66,40 @@ class InvoiceFieldExtractorTest {
         assertThat(invoice.supplierName).isEqualTo("NORTHWIND WHOLESALE");
     }
 
+    @Test void marksExpectedButUnreadableGstinsAsZeroConfidence() {
+        var invoice = extractor.extract(new ExtractedContent("""
+                GST INVOICE
+                Supplier GSTIN: 1SABCDE1234F1Z7
+                Customer: Sample Office Supplies
+                Customer GSTIM: 2SPQRSX5678K1Z2
+                Bill No: PI-7781
+                Subtotal: 1950.00
+                IGST: 351.60
+                Grand Total: 2301.00
+                """, List.of(), SourceType.SCANNED_PDF, 1));
+        assertThat(invoice.supplierGstin).isNull();
+        assertThat(invoice.customerGstin).isNull();
+        assertThat(invoice.fieldConfidences).containsEntry("supplierGstin", 0.0).containsEntry("customerGstin", 0.0);
+        assertThat(invoice.warnings).contains("Supplier GSTIN was expected but could not be extracted",
+                "Customer GSTIN was expected but could not be extracted");
+    }
+
+    @Test void rejectsAmbiguousOrInconsistentNumericTailRows() {
+        var inconsistent = extractor.extract(content("""
+                Invoice No: BAD-1
+                Product Description Quantity Rate Amount
+                Widget 2 100.00 260.00
+                Grand Total: 260.00
+                """));
+        var richUndelimited = extractor.extract(content("""
+                Invoice No: BAD-2
+                Description HSN Qty Rate GST Amount
+                Widget 1234 2 100.00 18 200.00
+                Grand Total: 200.00
+                """));
+        assertThat(inconsistent.lineItems).isEmpty();
+        assertThat(richUndelimited.lineItems).isEmpty();
+    }
+
     private ExtractedContent content(String text) { return new ExtractedContent(text, List.of(), SourceType.DIGITAL_PDF, 1); }
 }

@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ParsedInvoice {
     public String invoiceNumber;
@@ -28,5 +30,6 @@ public class ParsedInvoice {
     public List<LineItemResponse> lineItems = new ArrayList<>();
     public List<String> warnings = new ArrayList<>();
     public Map<String, Double> fieldConfidences = new LinkedHashMap<>();
+    public Set<String> expectedFields = new LinkedHashSet<>();
     public double extractionConfidence;
 }

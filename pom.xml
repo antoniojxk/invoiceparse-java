@@ -39,7 +39,10 @@
             <resource><directory>src/main/resources</directory></resource>
             <resource>
                 <directory>samples</directory>
-                <includes><include>digital-invoice-layout-a.pdf</include></includes>
+                <includes>
+                    <include>digital-invoice-layout-a.pdf</include>
+                    <include>image-invoice-layout-b.png</include>
+                </includes>
                 <targetPath>static/samples</targetPath>
             </resource>
         </resources>

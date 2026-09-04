@@ -25,6 +25,11 @@ class DemoProfileIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("Referrer-Policy", "no-referrer"));
+
+        mvc.perform(get("/samples/image-invoice-layout-b.png"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"));
     }
 
     @Test void disablesPublicApiDocumentation() throws Exception {

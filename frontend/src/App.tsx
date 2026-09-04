@@ -11,6 +11,23 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 type Screen = "upload" | "processing" | "results";
 
+const SAMPLE_INVOICES = [
+  {
+    name: "Text-layer invoice",
+    description: "A one-page GST invoice with selectable text and itemized totals.",
+    filename: "digital-invoice-layout-a.pdf",
+    format: "PDF",
+    detail: "1 page · 1.7 KB",
+  },
+  {
+    name: "Raster invoice",
+    description: "A high-resolution invoice image that exercises the OCR path.",
+    filename: "image-invoice-layout-b.png",
+    format: "PNG",
+    detail: "1600 × 1200 · 75 KB",
+  },
+] as const;
+
 function BrandMark() {
   return <div className="brand-mark" aria-hidden="true"><span className="brand-fold" /><span className="brand-line one" /><span className="brand-line two" /></div>;
 }
@@ -124,50 +141,81 @@ interface UploadScreenProps {
 
 function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile, onRemove, onSubmit, onSample, onDragChange }: UploadScreenProps) {
   return (
-    <div className="upload-layout">
-      <section className="intro-panel">
-        <div className="eyebrow"><Sparkles size={14} /> Structured data, in seconds</div>
-        <h1>Turn invoices into <em>review-ready</em> data.</h1>
-        <p className="intro-copy">Upload a PDF or image. InvoiceParse detects text, runs OCR when needed, validates the totals, and returns clean, structured JSON.</p>
-        <div className="process-list" aria-label="Processing pipeline">
-          <ProcessStep icon={<FileSearch />} number="01" title="Detect" copy="Text PDF, scan, or image" />
-          <ProcessStep icon={<ScanLine />} number="02" title="Extract" copy="Fields and line items" />
-          <ProcessStep icon={<ShieldCheck />} number="03" title="Validate" copy="GSTIN, totals, confidence" />
-        </div>
-      </section>
+    <div className="upload-screen">
+      <div className="upload-layout">
+        <section className="intro-panel">
+          <div className="eyebrow"><Sparkles size={14} /> Structured data, in seconds</div>
+          <h1>Turn invoices into <em>review-ready</em> data.</h1>
+          <p className="intro-copy">Upload a PDF or image. InvoiceParse detects text, runs OCR when needed, validates the totals, and returns clean, structured JSON.</p>
+          <div className="process-list" aria-label="Processing pipeline">
+            <ProcessStep icon={<FileSearch />} number="01" title="Detect" copy="Text PDF, scan, or image" />
+            <ProcessStep icon={<ScanLine />} number="02" title="Extract" copy="Fields and line items" />
+            <ProcessStep icon={<ShieldCheck />} number="03" title="Validate" copy="GSTIN, totals, confidence" />
+          </div>
+        </section>
 
-      <section className="upload-panel" aria-labelledby="upload-title">
-        <div className="upload-panel-heading"><div><span className="step-label">PUBLIC DEMO</span><h2 id="upload-title">Choose an invoice</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Ephemeral processing</div></div>
-        <label
-          className={`dropzone ${isDragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
-          onDragEnter={(event) => { event.preventDefault(); onDragChange(true); }}
-          onDragOver={(event) => event.preventDefault()}
-          onDragLeave={(event) => { event.preventDefault(); if (event.currentTarget === event.target) onDragChange(false); }}
-          onDrop={(event) => { event.preventDefault(); onDragChange(false); const droppedFile = event.dataTransfer.files[0]; if (droppedFile) onFile(droppedFile); }}
-        >
-          <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) onFile(selected); }} />
-          {file ? (
-            <div className="selected-file">
-              <div className="file-icon"><FileText size={26} /></div>
-              <div className="file-meta"><strong>{file.name}</strong><span>{formatBytes(file.size)} · Ready to parse</span></div>
-              <button type="button" className="remove-file" aria-label={`Remove ${file.name}`} onClick={(event) => { event.preventDefault(); onRemove(); }}><X size={17} /></button>
-            </div>
-          ) : (
-            <div className="dropzone-empty">
-              <div className="upload-icon"><UploadCloud size={28} /></div><strong>Drop your invoice here</strong><span>or <u>browse files</u> from your computer</span>
-              <div className="file-types"><span><FileText size={13} /> PDF</span><span><ImageIcon size={13} /> PNG</span><span><ImageIcon size={13} /> JPG</span><span>MAX 5 MB</span></div>
-            </div>
-          )}
-        </label>
-        {error && <div className="error-banner" role="alert"><CircleAlert size={17} /><span>{error}</span></div>}
-        <button className="sample-button" type="button" disabled={sampleLoading} onClick={onSample}>
-          {sampleLoading ? <LoaderCircle className="spinner" size={15} /> : <FileCheck2 size={15} />}
-          {sampleLoading ? "Loading sample…" : "Use the synthetic sample"}
-        </button>
-        <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse invoice <ChevronRight size={18} /></button>
-        <p className="upload-note">Use synthetic or non-sensitive documents. Originals are discarded after processing; extracted results may remain in memory for up to one hour.</p>
-      </section>
+        <section className="upload-panel" aria-labelledby="upload-title">
+          <div className="upload-panel-heading"><div><span className="step-label">PUBLIC DEMO</span><h2 id="upload-title">Choose an invoice</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Ephemeral processing</div></div>
+          <label
+            className={`dropzone ${isDragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
+            onDragEnter={(event) => { event.preventDefault(); onDragChange(true); }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={(event) => { event.preventDefault(); if (event.currentTarget === event.target) onDragChange(false); }}
+            onDrop={(event) => { event.preventDefault(); onDragChange(false); const droppedFile = event.dataTransfer.files[0]; if (droppedFile) onFile(droppedFile); }}
+          >
+            <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) onFile(selected); }} />
+            {file ? (
+              <div className="selected-file">
+                <div className="file-icon"><FileText size={26} /></div>
+                <div className="file-meta"><strong>{file.name}</strong><span>{formatBytes(file.size)} · Ready to parse</span></div>
+                <button type="button" className="remove-file" aria-label={`Remove ${file.name}`} onClick={(event) => { event.preventDefault(); onRemove(); }}><X size={17} /></button>
+              </div>
+            ) : (
+              <div className="dropzone-empty">
+                <div className="upload-icon"><UploadCloud size={28} /></div><strong>Drop your invoice here</strong><span>or <u>browse files</u> from your computer</span>
+                <div className="file-types"><span><FileText size={13} /> PDF</span><span><ImageIcon size={13} /> PNG</span><span><ImageIcon size={13} /> JPG</span><span>MAX 5 MB</span></div>
+              </div>
+            )}
+          </label>
+          {error && <div className="error-banner" role="alert"><CircleAlert size={17} /><span>{error}</span></div>}
+          <button className="sample-button" type="button" disabled={sampleLoading} onClick={onSample}>
+            {sampleLoading ? <LoaderCircle className="spinner" size={15} /> : <FileCheck2 size={15} />}
+            {sampleLoading ? "Loading sample…" : "Use the synthetic sample"}
+          </button>
+          <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse invoice <ChevronRight size={18} /></button>
+          <p className="upload-note">Use synthetic or non-sensitive documents. Originals are discarded after processing; extracted results may remain in memory for up to one hour.</p>
+        </section>
+      </div>
+      <SampleLibrary />
     </div>
+  );
+}
+
+function SampleLibrary() {
+  return (
+    <section className="sample-library" aria-labelledby="sample-library-title">
+      <div className="sample-library-heading">
+        <div><span className="step-label">TEST DOCUMENTS</span><h2 id="sample-library-title">Sample invoices</h2></div>
+        <p>Download a fixture, inspect it locally, then drop it into the uploader above to exercise a specific extraction path.</p>
+      </div>
+      <div className="sample-grid">
+        {SAMPLE_INVOICES.map((sample) => (
+          <article className="sample-card" key={sample.filename}>
+            <div className={`sample-file-icon ${sample.format.toLowerCase()}`}>{sample.format === "PDF" ? <FileText size={24} /> : <ImageIcon size={24} />}</div>
+            <div className="sample-card-copy">
+              <div className="sample-card-meta"><span>{sample.format}</span><small>{sample.detail}</small></div>
+              <h3>{sample.name}</h3>
+              <p>{sample.description}</p>
+              <code>{sample.filename}</code>
+            </div>
+            <a className="sample-download" href={`/samples/${sample.filename}`} download={sample.filename} aria-label={`Download ${sample.name}`}>
+              <Download size={16} /> Download
+            </a>
+          </article>
+        ))}
+      </div>
+      <p className="sample-disclaimer"><ShieldCheck size={14} /> Every name, address, identifier, and transaction in these files is synthetic.</p>
+    </section>
   );
 }
 

@@ -68,6 +68,29 @@ Wait for both services to become healthy, then open:
 
 Data is kept in the `invoiceparse-postgres` named volume. The Compose credentials are deliberately local development defaults; change them for any shared environment.
 
+## Public demo on Google Cloud Run
+
+The `demo` Spring profile is intended for an unauthenticated portfolio deployment. It uses an in-memory H2 database instead of PostgreSQL, discards original uploads, expires extracted results after one hour, disables API documentation, adds browser security headers, and limits traffic and document complexity. Data also disappears whenever Cloud Run replaces or scales down the container.
+
+After selecting a Google Cloud project with billing enabled, deploy the repository-root Dockerfile with:
+
+```bash
+gcloud run deploy invoiceparse-demo \
+  --source . \
+  --region northamerica-northeast2 \
+  --allow-unauthenticated \
+  --cpu 1 \
+  --memory 2Gi \
+  --concurrency 1 \
+  --min 0 \
+  --max 1 \
+  --timeout 180s \
+  --cpu-boost \
+  --set-env-vars SPRING_PROFILES_ACTIVE=demo
+```
+
+The recommended single-instance and single-concurrency settings bound OCR resource use and match the application's demo request guard. Set a Google Cloud budget alert before sharing the URL publicly. The demo UI includes a bundled synthetic invoice so visitors do not need to upload a real document.
+
 ## Upload an invoice
 
 The API accepts one multipart field named `file`:
@@ -173,6 +196,17 @@ Important configuration variables:
 | `OCR_TIMEOUT_SECONDS` | `60` | Hard limit for each page OCR process |
 | `MINIMUM_OVERALL_CONFIDENCE` | `0.70` | Manual-review threshold |
 | `TOTAL_TOLERANCE` | `0.10` | Allowed arithmetic difference |
+| `MAXIMUM_PDF_PAGES` | `25` | Maximum accepted PDF page count (`3` in the demo profile) |
+| `MAX_UPLOAD_SIZE` | `5MB` in demo | Maximum uploaded file size for the public demo |
+| `MAX_REQUEST_SIZE` | `6MB` in demo | Multipart request ceiling, including upload framing |
+| `MAXIMUM_IMAGE_PIXELS` | `40000000` | Maximum decoded image or rendered-page pixel count (`12000000` in demo) |
+| `MAXIMUM_IMAGE_DIMENSION` | `12000` | Maximum image width or height in pixels (`6000` in demo) |
+| `RESULT_RETENTION_MINUTES` | `0` | Parsed-result lifetime; `0` retains results, while demo defaults to `60` |
+| `DEMO_ACCESS_ENABLED` | `false` | Enables the in-process public-demo traffic guard |
+| `DEMO_RATE_WINDOW_SECONDS` | `600` | Demo rate-limit window |
+| `DEMO_MAX_REQUESTS_PER_CLIENT` | `5` | Requests allowed per client in each demo window |
+| `DEMO_MAX_REQUESTS_GLOBAL` | `30` | Requests allowed globally in each demo window |
+| `DEMO_MAX_CONCURRENT_REQUESTS` | `1` | Concurrent demo parses before new requests receive `503` |
 
 No API keys or paid cloud services are required. The service does not log extracted document text.
 
@@ -220,6 +254,7 @@ tools/                          dependency-free sample generator
 ## Current limitations
 
 - The parser recognizes invoices only; `documentType` is `INVOICE` or `UNKNOWN` rather than a broad document classifier.
+- The public `demo` profile is intentionally ephemeral and single-instance. Durable duplicate history remains available only in the normal PostgreSQL profile.
 - Generic regex and row heuristics work best on conventional labels and clean, single-line item rows. The undelimited numeric-tail fallback is intentionally limited to Description/Quantity/Rate/Total rows with consistent arithmetic; richer layouts need recoverable delimiters or future geometric reconstruction.
 - Positional tokens are retained, but robust geometric table reconstruction and cross-page table stitching are future work.
 - OCR uses English data and no deskew/denoise stage by default. Install/configure additional Tesseract languages as needed.

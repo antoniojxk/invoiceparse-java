@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:invoiceparse-demo;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE:5MB}
+      max-request-size: ${MAX_REQUEST_SIZE:6MB}
+
+server:
+  tomcat:
+    threads:
+      max: 8
+
+invoiceparse:
+  maximum-pdf-pages: ${MAXIMUM_PDF_PAGES:3}
+  maximum-image-pixels: ${MAXIMUM_IMAGE_PIXELS:12000000}
+  maximum-image-dimension: ${MAXIMUM_IMAGE_DIMENSION:6000}
+  result-retention-minutes: ${RESULT_RETENTION_MINUTES:60}
+  ocr-timeout-seconds: ${OCR_TIMEOUT_SECONDS:30}
+  demo-access:
+    enabled: true
+    window-seconds: ${DEMO_RATE_WINDOW_SECONDS:600}
+    max-requests-per-client: ${DEMO_MAX_REQUESTS_PER_CLIENT:5}
+    max-requests-global: ${DEMO_MAX_REQUESTS_GLOBAL:30}
+    max-concurrent-requests: ${DEMO_MAX_CONCURRENT_REQUESTS:1}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

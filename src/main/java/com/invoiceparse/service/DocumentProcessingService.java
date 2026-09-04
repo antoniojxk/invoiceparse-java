@@ -3,6 +3,7 @@ package com.invoiceparse.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.invoiceparse.api.ParseDocumentResponse;
+import com.invoiceparse.config.InvoiceParseProperties;
 import com.invoiceparse.exception.DocumentProcessingException;
 import com.invoiceparse.extract.DocumentContentExtractor;
 import com.invoiceparse.extract.FileTypeDetector;
@@ -37,19 +38,22 @@ public class DocumentProcessingService {
     private final ConfidenceAssessor confidenceAssessor;
     private final DocumentRecordRepository repository;
     private final ObjectMapper objectMapper;
+    private final InvoiceParseProperties properties;
 
     public DocumentProcessingService(FileTypeDetector fileTypes, DocumentContentExtractor contentExtractor,
             InvoiceFieldExtractor invoiceExtractor, InvoiceValidator validator, ConfidenceAssessor confidenceAssessor,
             DocumentRecordRepository repository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper, InvoiceParseProperties properties) {
         this.fileTypes = fileTypes; this.contentExtractor = contentExtractor; this.invoiceExtractor = invoiceExtractor;
         this.validator = validator; this.confidenceAssessor = confidenceAssessor; this.repository = repository;
         this.objectMapper = objectMapper;
+        this.properties = properties;
     }
 
     @Transactional
     public synchronized ParseDocumentResponse process(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new DocumentProcessingException("INVALID_FILE", "The uploaded file is empty");
+        deleteExpiredResults();
         byte[] bytes;
         try { bytes = file.getBytes(); } catch (IOException e) { throw new DocumentProcessingException("INVALID_FILE", "The uploaded file could not be read", e); }
         String hash = sha256(bytes);
@@ -82,6 +86,12 @@ public class DocumentProcessingService {
         log.info("Processed document: documentId={}, filename={}, sourceType={}, pages={}, reviewRequired={}",
                 id, filename, content.sourceType(), content.pageCount(), manualReview);
         return response;
+    }
+
+    private void deleteExpiredResults() {
+        if (properties.resultRetentionMinutes() > 0) {
+            repository.deleteByCreatedAtBefore(Instant.now().minusSeconds(properties.resultRetentionMinutes() * 60));
+        }
     }
 
     private String serialize(ParseDocumentResponse value) {

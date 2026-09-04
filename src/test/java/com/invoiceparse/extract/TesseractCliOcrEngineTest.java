@@ -19,7 +19,9 @@ class TesseractCliOcrEngineTest {
         Path slowCommand = tempDir.resolve("slow-ocr.sh");
         Files.writeString(slowCommand, "#!/bin/sh\nsleep 10\n");
         assertThat(slowCommand.toFile().setExecutable(true)).isTrue();
-        var properties = new InvoiceParseProperties(40, 250, slowCommand.toString(), "eng", 1, .7, .1);
+        var properties = new InvoiceParseProperties(40, 250, slowCommand.toString(), "eng", 1, .7, .1,
+                25, 40_000_000, 12_000, 0,
+                new InvoiceParseProperties.DemoAccess(false, 600, 5, 30, 1));
         var engine = new TesseractCliOcrEngine(properties);
 
         assertThatThrownBy(() -> engine.recognize(new BufferedImage(20, 20, BufferedImage.TYPE_INT_RGB), 1))

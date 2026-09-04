@@ -10,6 +10,7 @@ WORKDIR /workspace
 COPY pom.xml .
 RUN mvn -B -ntp dependency:go-offline
 COPY src src
+COPY samples samples
 COPY --from=frontend-build /frontend/dist src/main/resources/static
 RUN mvn -B -ntp -DskipTests package
 
@@ -20,6 +21,7 @@ RUN apt-get update \
 WORKDIR /app
 RUN groupadd --system invoiceparse && useradd --system --gid invoiceparse --home-dir /app invoiceparse
 COPY --from=build --chown=invoiceparse:invoiceparse /workspace/target/invoiceparse-java-*.jar app.jar
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=55.0 -XX:+ExitOnOutOfMemoryError"
 USER invoiceparse
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

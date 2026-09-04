@@ -16,6 +16,11 @@ spring:
   jackson:
     default-property-inclusion: always
 
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: native
+  shutdown: graceful
+
 invoiceparse:
   minimum-text-characters-per-page: ${MINIMUM_TEXT_CHARACTERS_PER_PAGE:40}
   pdf-render-dpi: ${PDF_RENDER_DPI:250}
@@ -24,6 +29,16 @@ invoiceparse:
   ocr-timeout-seconds: ${OCR_TIMEOUT_SECONDS:60}
   minimum-overall-confidence: ${MINIMUM_OVERALL_CONFIDENCE:0.70}
   total-tolerance: ${TOTAL_TOLERANCE:0.10}
+  maximum-pdf-pages: ${MAXIMUM_PDF_PAGES:25}
+  maximum-image-pixels: ${MAXIMUM_IMAGE_PIXELS:40000000}
+  maximum-image-dimension: ${MAXIMUM_IMAGE_DIMENSION:12000}
+  result-retention-minutes: ${RESULT_RETENTION_MINUTES:0}
+  demo-access:
+    enabled: ${DEMO_ACCESS_ENABLED:false}
+    window-seconds: ${DEMO_RATE_WINDOW_SECONDS:600}
+    max-requests-per-client: ${DEMO_MAX_REQUESTS_PER_CLIENT:5}
+    max-requests-global: ${DEMO_MAX_REQUESTS_GLOBAL:30}
+    max-concurrent-requests: ${DEMO_MAX_CONCURRENT_REQUESTS:1}
 
 management:
   endpoints:

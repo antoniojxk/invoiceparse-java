@@ -10,7 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class InvoiceValidatorTest {
     private final InvoiceValidator validator = new InvoiceValidator(new GstinValidator(),
-            new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1));
+            new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1,
+                    25, 40_000_000, 12_000, 0,
+                    new InvoiceParseProperties.DemoAccess(false, 600, 5, 30, 1)));
     @Test void validatesLineAndInvoiceArithmetic() {
         var invoice = new ParsedInvoice();
         invoice.supplierGstin = "27ABCDE1234F1Z5";

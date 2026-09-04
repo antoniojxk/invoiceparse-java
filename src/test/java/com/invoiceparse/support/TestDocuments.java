@@ -25,4 +25,14 @@ public final class TestDocuments {
         } catch (IOException e) { throw new IllegalStateException(e); }
     }
     public static byte[] blankPdf() { return pdf(""); }
+
+    public static byte[] blankPdf(int pageCount) {
+        try (var document = new PDDocument(); var output = new ByteArrayOutputStream()) {
+            for (int i = 0; i < pageCount; i++) document.addPage(new PDPage(PDRectangle.A4));
+            document.save(output);
+            return output.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }

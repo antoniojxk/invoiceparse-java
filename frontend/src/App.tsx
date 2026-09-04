@@ -7,7 +7,7 @@ import {
 import { getApiHealth, parseInvoice } from "./api";
 import type { LineItem, ParseDocumentResponse, ValidationResult } from "./types";
 
-const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 type Screen = "upload" | "processing" | "results";
 
@@ -23,6 +23,7 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sampleLoading, setSampleLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { void getApiHealth().then(setApiOnline); }, []);
@@ -49,6 +50,21 @@ export default function App() {
       setError(requestError instanceof Error ? requestError.message : "The invoice could not be processed.");
       setScreen("upload");
       void getApiHealth().then(setApiOnline);
+    }
+  }
+
+  async function loadSample() {
+    setError(null);
+    setSampleLoading(true);
+    try {
+      const response = await fetch("/samples/digital-invoice-layout-a.pdf");
+      if (!response.ok) throw new Error();
+      const sample = new File([await response.blob()], "synthetic-sample-invoice.pdf", { type: "application/pdf" });
+      selectFile(sample);
+    } catch {
+      setError("The synthetic sample could not be loaded. Please choose a file instead.");
+    } finally {
+      setSampleLoading(false);
     }
   }
 
@@ -87,13 +103,13 @@ export default function App() {
       </header>
 
       <main>
-        {screen === "upload" && <UploadScreen file={file} error={error} isDragging={isDragging} inputRef={inputRef} onFile={selectFile} onRemove={() => { setFile(null); setError(null); if (inputRef.current) inputRef.current.value = ""; }} onSubmit={submit} onDragChange={setIsDragging} />}
+        {screen === "upload" && <UploadScreen file={file} error={error} isDragging={isDragging} sampleLoading={sampleLoading} inputRef={inputRef} onFile={selectFile} onRemove={() => { setFile(null); setError(null); if (inputRef.current) inputRef.current.value = ""; }} onSubmit={submit} onSample={loadSample} onDragChange={setIsDragging} />}
         {screen === "processing" && file && <ProcessingScreen filename={file.name} />}
         {screen === "results" && result && <ResultsScreen result={result} copied={copied} onReset={reset} onCopy={copyJson} onDownload={downloadJson} />}
       </main>
 
       <footer className="site-footer">
-        <span>Local-first extraction. Your document is never sent to a third-party AI service.</span>
+        <span>Private demo container. No third-party AI service receives your document.</span>
         <span className="footer-tech">Spring Boot · PDFBox · Tesseract · React</span>
       </footer>
     </div>
@@ -101,12 +117,12 @@ export default function App() {
 }
 
 interface UploadScreenProps {
-  file: File | null; error: string | null; isDragging: boolean;
+  file: File | null; error: string | null; isDragging: boolean; sampleLoading: boolean;
   inputRef: React.RefObject<HTMLInputElement>; onFile: (file: File) => void;
-  onRemove: () => void; onSubmit: () => void; onDragChange: (dragging: boolean) => void;
+  onRemove: () => void; onSubmit: () => void; onSample: () => void; onDragChange: (dragging: boolean) => void;
 }
 
-function UploadScreen({ file, error, isDragging, inputRef, onFile, onRemove, onSubmit, onDragChange }: UploadScreenProps) {
+function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile, onRemove, onSubmit, onSample, onDragChange }: UploadScreenProps) {
   return (
     <div className="upload-layout">
       <section className="intro-panel">
@@ -121,7 +137,7 @@ function UploadScreen({ file, error, isDragging, inputRef, onFile, onRemove, onS
       </section>
 
       <section className="upload-panel" aria-labelledby="upload-title">
-        <div className="upload-panel-heading"><div><span className="step-label">NEW PARSE</span><h2 id="upload-title">Choose an invoice</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Local processing</div></div>
+        <div className="upload-panel-heading"><div><span className="step-label">PUBLIC DEMO</span><h2 id="upload-title">Choose an invoice</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Ephemeral processing</div></div>
         <label
           className={`dropzone ${isDragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
           onDragEnter={(event) => { event.preventDefault(); onDragChange(true); }}
@@ -139,13 +155,17 @@ function UploadScreen({ file, error, isDragging, inputRef, onFile, onRemove, onS
           ) : (
             <div className="dropzone-empty">
               <div className="upload-icon"><UploadCloud size={28} /></div><strong>Drop your invoice here</strong><span>or <u>browse files</u> from your computer</span>
-              <div className="file-types"><span><FileText size={13} /> PDF</span><span><ImageIcon size={13} /> PNG</span><span><ImageIcon size={13} /> JPG</span><span>MAX 15 MB</span></div>
+              <div className="file-types"><span><FileText size={13} /> PDF</span><span><ImageIcon size={13} /> PNG</span><span><ImageIcon size={13} /> JPG</span><span>MAX 5 MB</span></div>
             </div>
           )}
         </label>
         {error && <div className="error-banner" role="alert"><CircleAlert size={17} /><span>{error}</span></div>}
+        <button className="sample-button" type="button" disabled={sampleLoading} onClick={onSample}>
+          {sampleLoading ? <LoaderCircle className="spinner" size={15} /> : <FileCheck2 size={15} />}
+          {sampleLoading ? "Loading sample…" : "Use the synthetic sample"}
+        </button>
         <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse invoice <ChevronRight size={18} /></button>
-        <p className="upload-note">Your original document is processed in memory and is not stored.</p>
+        <p className="upload-note">Use synthetic or non-sensitive documents. Originals are discarded after processing; extracted results may remain in memory for up to one hour.</p>
       </section>
     </div>
   );

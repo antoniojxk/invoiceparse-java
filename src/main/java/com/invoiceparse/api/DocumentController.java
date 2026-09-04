@@ -11,18 +11,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
     private final DocumentProcessingService service;
-    public DocumentController(DocumentProcessingService service) { this.service = service; }
+    private final DemoRequestGuard requestGuard;
+    public DocumentController(DocumentProcessingService service, DemoRequestGuard requestGuard) {
+        this.service = service;
+        this.requestGuard = requestGuard;
+    }
 
     @PostMapping(value = "/parse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Parse an invoice PDF or image")
     public ParseDocumentResponse parse(
             @RequestPart("file") @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                    schema = @Schema(type = "string", format = "binary"))) MultipartFile file) {
-        return service.process(file);
+                    schema = @Schema(type = "string", format = "binary"))) MultipartFile file,
+            HttpServletRequest request) {
+        try (var ignored = requestGuard.acquire(request.getRemoteAddr())) {
+            return service.process(file);
+        }
     }
 }

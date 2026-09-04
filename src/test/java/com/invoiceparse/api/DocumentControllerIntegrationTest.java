@@ -1,6 +1,7 @@
 package com.invoiceparse.api;
 
 import com.invoiceparse.persistence.DocumentRecordRepository;
+import com.invoiceparse.persistence.DocumentRecord;
 import com.invoiceparse.support.TestDocuments;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,10 +11,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.util.HexFormat;
+import java.util.UUID;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "invoiceparse.maximum-pdf-pages=1",
+        "invoiceparse.result-retention-minutes=60"
+})
 @AutoConfigureMockMvc
 class DocumentControllerIntegrationTest {
     @Autowired MockMvc mvc;
@@ -56,5 +65,25 @@ class DocumentControllerIntegrationTest {
     @Test void rejectsMissingFilePart() throws Exception {
         mvc.perform(multipart("/api/v1/documents/parse"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("MISSING_FILE"));
+    }
+
+    @Test void rejectsPdfAboveConfiguredPageLimit() throws Exception {
+        var file = new MockMultipartFile("file", "too-many-pages.pdf", "application/pdf", TestDocuments.blankPdf(2));
+        mvc.perform(multipart("/api/v1/documents/parse").file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_LIMIT_EXCEEDED"));
+    }
+
+    @Test void removesExpiredCachedResultBeforeDuplicateLookup() throws Exception {
+        byte[] pdf = TestDocuments.pdf("TAX INVOICE", "Invoice No: FRESH-1", "Grand Total: 10.00");
+        String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pdf));
+        repository.saveAndFlush(new DocumentRecord(UUID.randomUUID(), hash, "old.pdf", "not-json",
+                Instant.now().minusSeconds(61 * 60)));
+
+        var file = new MockMultipartFile("file", "fresh.pdf", "application/pdf", pdf);
+        mvc.perform(multipart("/api/v1/documents/parse").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.duplicate").value(false))
+                .andExpect(jsonPath("$.invoiceNumber").value("FRESH-1"));
     }
 }

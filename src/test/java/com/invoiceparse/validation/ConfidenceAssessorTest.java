@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ConfidenceAssessorTest {
     private final ConfidenceAssessor assessor = new ConfidenceAssessor(
-            new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1));
+            properties());
 
     @Test void requiresReviewDespiteHighOcrConfidenceWhenExpectedGstinsAreMissing() {
         var invoice = new ParsedInvoice();
@@ -36,7 +36,7 @@ class ConfidenceAssessorTest {
     }
 
     @Test void reviewedScannedPdfFailureCannotBeConfidentlyAccepted() {
-        var properties = new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1);
+        var properties = properties();
         var content = new ExtractedContent("""
                 NORTHWIND WHOLESALE
                 GST INVOICE
@@ -61,5 +61,11 @@ class ConfidenceAssessorTest {
         assertThat(validation).anyMatch(v -> v.code().equals("INVOICE_TOTAL") && !v.valid());
         assertThat(result.manualReviewRequired()).isTrue();
         assertThat(result.overallConfidence()).isLessThan(.70);
+    }
+
+    private static InvoiceParseProperties properties() {
+        return new InvoiceParseProperties(40, 250, "tesseract", "eng", 60, .7, .1,
+                25, 40_000_000, 12_000, 0,
+                new InvoiceParseProperties.DemoAccess(false, 600, 5, 30, 1));
     }
 }

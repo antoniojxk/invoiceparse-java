@@ -2,6 +2,8 @@
 
 A local-first Java/Spring Boot MVP that turns invoice PDFs and images into normalized JSON. It detects usable PDF text, falls back to Tesseract for scanned content, extracts common header fields and basic line-item tables, validates arithmetic, and records SHA-256 hashes to identify duplicate uploads.
 
+The project includes a responsive React review client with drag-and-drop upload, extraction confidence, line items, validation results, warnings, and JSON export.
+
 This is an honest invoice-focused baseline intended for evaluation and extension. It is not a production-grade universal document parser, and extraction accuracy depends on document quality, OCR quality, and layout.
 
 ## Features
@@ -18,6 +20,7 @@ This is an honest invoice-focused baseline intended for evaluation and extension
 - SHA-256 duplicate detection backed by PostgreSQL
 - Flyway migrations, Actuator health, OpenAPI/Swagger UI, Docker, and Docker Compose
 - Synthetic sample invoices and expected result fixtures
+- Portfolio-ready React UI for uploading and reviewing parsed invoices
 
 ## Processing flow
 
@@ -58,6 +61,7 @@ docker compose up --build
 
 Wait for both services to become healthy, then open:
 
+- Web client: <http://localhost:8080>
 - Health: <http://localhost:8080/actuator/health>
 - Swagger UI: <http://localhost:8080/swagger-ui.html>
 - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
@@ -147,6 +151,16 @@ export DATABASE_PASSWORD=invoiceparse
 mvn spring-boot:run
 ```
 
+Run the React client in a second terminal. Its development server proxies API and health requests to Spring Boot:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173>. A production frontend build can be created with `npm run build`; the Docker image performs this build automatically and packages it into the Spring Boot application.
+
 Important configuration variables:
 
 | Variable | Default | Purpose |
@@ -198,6 +212,7 @@ src/main/java/com/invoiceparse/
 └── validation/   GSTIN and arithmetic validation
 src/main/resources/db/migration/  Flyway schema
 src/test/                       unit and HTTP integration tests
+frontend/                       React + TypeScript review client
 samples/                        generated synthetic documents/results
 tools/                          dependency-free sample generator
 ```

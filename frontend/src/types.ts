@@ -48,7 +48,8 @@ export interface ParseDocumentResponse {
   supplierGstin: string | null;
   customerName: string | null;
   customerGstin: string | null;
-  address: string | null;
+  supplierAddress: string | null;
+  customerAddress: string | null;
   subtotal: number | null;
   discount: number | null;
   cgst: number | null;

@@ -67,6 +67,22 @@ class InvoiceFieldExtractorTest {
         assertThat(invoice.supplierName).isEqualTo("NORTHWIND WHOLESALE");
     }
 
+    @Test void keepsSupplierAndCustomerAddressesSeparate() {
+        var invoice = extractor.extract(content("""
+                TAX INVOICE
+                Supplier: Example Components Pvt Ltd
+                Supplier Address: 10 Supplier Park, Pune
+                Customer: Demo Retail LLP
+                Customer Address: 22 Buyer Road, Mumbai
+                Invoice No: ADDR-1
+                Invoice Date: 04-09-2026
+                Grand Total: 100.00
+                """));
+
+        assertThat(invoice.supplierAddress).isEqualTo("10 Supplier Park, Pune");
+        assertThat(invoice.customerAddress).isEqualTo("22 Buyer Road, Mumbai");
+    }
+
     @Test void marksExpectedButUnreadableGstinsAsZeroConfidence() {
         var invoice = extractor.extract(new ExtractedContent("""
                 GST INVOICE

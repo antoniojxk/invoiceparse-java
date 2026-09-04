@@ -57,7 +57,12 @@ public class InvoiceFieldExtractor {
         invoice.customerName = labeled(lines, "customer\\s*name|buyer\\s*name|customer(?!\\s*gstin)|buyer(?!\\s*gstin)|bill\\s*to|recipient")
                 .map(this::cleanText).orElse(parties.customerName());
         if (invoice.supplierName == null) invoice.supplierName = inferSupplier(lines);
-        invoice.address = labeled(lines, "(?:supplier\\s*)?address|registered\\s*office").map(this::cleanText).orElse(null);
+        invoice.supplierAddress = labeled(lines,
+                "(?:supplier|seller|vendor)\\s*(?:address|add\\.?)|registered\\s*office|address")
+                .map(this::cleanText).orElse(null);
+        invoice.customerAddress = labeled(lines,
+                "(?:customer|buyer|bill\\s*to|ship\\s*to|party)\\s*(?:address|add\\.?)")
+                .map(this::cleanText).orElse(null);
 
         invoice.subtotal = amount(lines, "sub[ -]?total|gross\\s*amount");
         invoice.discount = amount(lines, "bill\\s*dis(?:count)?|(?:total\\s*)?discount");
@@ -82,7 +87,8 @@ public class InvoiceFieldExtractor {
         putConfidence(invoice, "supplierGstin", invoice.supplierGstin, fieldConfidence);
         putConfidence(invoice, "customerName", invoice.customerName, fieldConfidence - 0.05);
         putConfidence(invoice, "customerGstin", invoice.customerGstin, fieldConfidence);
-        putConfidence(invoice, "address", invoice.address, fieldConfidence - 0.08);
+        putConfidence(invoice, "supplierAddress", invoice.supplierAddress, fieldConfidence - 0.08);
+        putConfidence(invoice, "customerAddress", invoice.customerAddress, fieldConfidence - 0.08);
         putConfidence(invoice, "subtotal", invoice.subtotal, fieldConfidence);
         putConfidence(invoice, "discount", invoice.discount, fieldConfidence);
         putConfidence(invoice, "cgst", invoice.cgst, fieldConfidence);

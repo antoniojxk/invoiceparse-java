@@ -19,6 +19,7 @@ public class ApiExceptionHandler {
             case "UNSUPPORTED_FILE_TYPE", "INVALID_FILE", "DOCUMENT_LIMIT_EXCEEDED" -> HttpStatus.BAD_REQUEST;
             case "RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
             case "DEMO_BUSY" -> HttpStatus.SERVICE_UNAVAILABLE;
+            case "DOCUMENT_AI_ERROR" -> HttpStatus.BAD_GATEWAY;
             default -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
         var response = ResponseEntity.status(status);

@@ -22,6 +22,12 @@ server:
   shutdown: graceful
 
 invoiceparse:
+  extraction-provider: ${INVOICE_EXTRACTION_PROVIDER:heuristic}
+  document-ai:
+    project-id: ${GOOGLE_CLOUD_PROJECT:}
+    location: ${DOCUMENT_AI_LOCATION:us}
+    processor-id: ${DOCUMENT_AI_PROCESSOR_ID:}
+    processor-version: ${DOCUMENT_AI_PROCESSOR_VERSION:}
   minimum-text-characters-per-page: ${MINIMUM_TEXT_CHARACTERS_PER_PAGE:40}
   pdf-render-dpi: ${PDF_RENDER_DPI:250}
   tesseract-command: ${TESSERACT_COMMAND:tesseract}

@@ -5,9 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.invoiceparse.api.ParseDocumentResponse;
 import com.invoiceparse.config.InvoiceParseProperties;
 import com.invoiceparse.exception.DocumentProcessingException;
-import com.invoiceparse.extract.DocumentContentExtractor;
 import com.invoiceparse.extract.FileTypeDetector;
-import com.invoiceparse.extract.InvoiceFieldExtractor;
+import com.invoiceparse.extract.InvoiceExtractionProvider;
 import com.invoiceparse.model.DocumentType;
 import com.invoiceparse.persistence.DocumentRecord;
 import com.invoiceparse.persistence.DocumentRecordRepository;
@@ -23,6 +22,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -32,19 +32,18 @@ import java.util.UUID;
 public class DocumentProcessingService {
     private static final Logger log = LoggerFactory.getLogger(DocumentProcessingService.class);
     private final FileTypeDetector fileTypes;
-    private final DocumentContentExtractor contentExtractor;
-    private final InvoiceFieldExtractor invoiceExtractor;
+    private final InvoiceExtractionProvider invoiceExtractor;
     private final InvoiceValidator validator;
     private final ConfidenceAssessor confidenceAssessor;
     private final DocumentRecordRepository repository;
     private final ObjectMapper objectMapper;
     private final InvoiceParseProperties properties;
 
-    public DocumentProcessingService(FileTypeDetector fileTypes, DocumentContentExtractor contentExtractor,
-            InvoiceFieldExtractor invoiceExtractor, InvoiceValidator validator, ConfidenceAssessor confidenceAssessor,
+    public DocumentProcessingService(FileTypeDetector fileTypes, InvoiceExtractionProvider invoiceExtractor,
+            InvoiceValidator validator, ConfidenceAssessor confidenceAssessor,
             DocumentRecordRepository repository,
             ObjectMapper objectMapper, InvoiceParseProperties properties) {
-        this.fileTypes = fileTypes; this.contentExtractor = contentExtractor; this.invoiceExtractor = invoiceExtractor;
+        this.fileTypes = fileTypes; this.invoiceExtractor = invoiceExtractor;
         this.validator = validator; this.confidenceAssessor = confidenceAssessor; this.repository = repository;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -57,7 +56,8 @@ public class DocumentProcessingService {
         byte[] bytes;
         try { bytes = file.getBytes(); } catch (IOException e) { throw new DocumentProcessingException("INVALID_FILE", "The uploaded file could not be read", e); }
         String hash = sha256(bytes);
-        var prior = repository.findByFileHash(hash);
+        String cacheKey = cacheKey(hash);
+        var prior = repository.findByFileHash(cacheKey);
         if (prior.isPresent()) {
             log.info("Duplicate document received: documentId={}, filename={}", prior.get().getId(), safeFilename(file.getOriginalFilename()));
             return deserialize(prior.get().getResponseJson()).withIdentity(
@@ -65,8 +65,9 @@ public class DocumentProcessingService {
         }
 
         var type = fileTypes.detect(bytes);
-        var content = contentExtractor.extract(bytes, type);
-        var invoice = invoiceExtractor.extract(content);
+        var extraction = invoiceExtractor.extract(bytes, type);
+        var content = extraction.content();
+        var invoice = extraction.invoice();
         var validation = validator.validate(invoice);
         var warnings = new ArrayList<>(invoice.warnings);
         validation.stream().filter(v -> !v.valid()).map(v -> v.message() + " (" + v.field() + ")").forEach(warnings::add);
@@ -80,11 +81,12 @@ public class DocumentProcessingService {
         String filename = safeFilename(file.getOriginalFilename());
         var response = new ParseDocumentResponse(id, filename, hash, false, documentType, content.sourceType(), content.pageCount(),
                 invoice.invoiceNumber, invoice.invoiceDate, invoice.supplierName, invoice.supplierGstin,
-                invoice.customerName, invoice.customerGstin, invoice.address, invoice.subtotal, invoice.discount,
+                invoice.customerName, invoice.customerGstin, invoice.supplierAddress, invoice.customerAddress,
+                invoice.subtotal, invoice.discount,
                 invoice.cgst, invoice.sgst, invoice.igst, invoice.taxableAmount, invoice.roundOff, invoice.grandTotal,
                 invoice.currency, invoice.lineItems, validation, java.util.Map.copyOf(invoice.fieldConfidences),
                 confidence, manualReview, List.copyOf(warnings), invoice.invoiceNumber, invoice.invoiceDate);
-        repository.saveAndFlush(new DocumentRecord(id, hash, filename, serialize(response), Instant.now()));
+        repository.saveAndFlush(new DocumentRecord(id, cacheKey, filename, serialize(response), Instant.now()));
         log.info("Processed document: documentId={}, filename={}, sourceType={}, pages={}, reviewRequired={}",
                 id, filename, content.sourceType(), content.pageCount(), manualReview);
         return response;
@@ -107,6 +109,11 @@ public class DocumentProcessingService {
     private String sha256(byte[] value) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value)); }
         catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
+    }
+    private String cacheKey(String fileHash) {
+        String namespace = invoiceExtractor.cacheNamespace();
+        if (namespace == null || namespace.isBlank() || namespace.equals("heuristic")) return fileHash;
+        return sha256((namespace + "\0" + fileHash).getBytes(StandardCharsets.UTF_8));
     }
     private String safeFilename(String name) {
         if (name == null || name.isBlank()) return "upload";

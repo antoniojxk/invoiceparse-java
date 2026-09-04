@@ -19,7 +19,8 @@ public class ParsedInvoice {
     public String supplierGstin;
     public String customerName;
     public String customerGstin;
-    public String address;
+    public String supplierAddress;
+    public String customerAddress;
     public BigDecimal subtotal;
     public BigDecimal discount;
     public BigDecimal cgst;

@@ -12,7 +12,8 @@
   "supplierGstin": "27ABCDE1234F1Z5",
   "customerName": "Sample Retail LLP",
   "customerGstin": "29PQRSX5678K1Z2",
-  "address": "10 Demo Park, Pune, Maharashtra",
+  "supplierAddress": "10 Demo Park, Pune, Maharashtra",
+  "customerAddress": null,
   "subtotal": null,
   "discount": null,
   "cgst": 144.00,
@@ -33,7 +34,7 @@
     {"code":"LINE_TOTAL","field":"lineItems[1].lineTotal","valid":true,"message":"Line total is consistent"},
     {"code":"INVOICE_TOTAL","field":"grandTotal","valid":true,"message":"Invoice total is consistent"}
   ],
-  "fieldConfidences": {"invoiceNumber":0.92,"invoiceDate":0.92,"supplierName":0.87,"supplierGstin":0.92,"customerName":0.87,"customerGstin":0.92,"address":0.84,"cgst":0.92,"sgst":0.92,"taxableAmount":0.92,"grandTotal":0.92},
+  "fieldConfidences": {"invoiceNumber":0.92,"invoiceDate":0.92,"supplierName":0.87,"supplierGstin":0.92,"customerName":0.87,"customerGstin":0.92,"supplierAddress":0.84,"cgst":0.92,"sgst":0.92,"taxableAmount":0.92,"grandTotal":0.92},
   "overallConfidence": 0.96,
   "manualReviewRequired": false,
   "warnings": [],

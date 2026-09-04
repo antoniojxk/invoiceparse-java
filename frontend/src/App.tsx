@@ -126,7 +126,6 @@ export default function App() {
       </main>
 
       <footer className="site-footer">
-        <span>Private demo container. No third-party AI service receives your document.</span>
         <span className="footer-tech">Spring Boot · PDFBox · Tesseract · React</span>
       </footer>
     </div>
@@ -267,7 +266,8 @@ function ResultsScreen({ result, copied, onReset, onCopy, onDownload }: ResultsS
             <DataField label="Supplier GSTIN" value={result.supplierGstin} confidence={result.fieldConfidences.supplierGstin} mono />
             <DataField label="Customer" value={result.customerName} confidence={result.fieldConfidences.customerName} />
             <DataField label="Customer GSTIN" value={result.customerGstin} confidence={result.fieldConfidences.customerGstin} mono />
-            <DataField label="Billing address" value={result.address} confidence={result.fieldConfidences.address} wide />
+            <DataField label="Supplier address" value={result.supplierAddress} confidence={result.fieldConfidences.supplierAddress} wide />
+            <DataField label="Customer address" value={result.customerAddress} confidence={result.fieldConfidences.customerAddress} wide />
           </div>
         </section>
         <section className="data-card amounts-card">

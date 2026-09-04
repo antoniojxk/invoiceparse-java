@@ -1,6 +1,6 @@
 # InvoiceParse Java
 
-A local-first Java/Spring Boot parser that turns invoices, purchase orders, sales orders, and purchase bills into normalized JSON. It detects usable PDF text, falls back to Tesseract for scanned content, extracts common header fields and line-item tables, validates arithmetic, and records SHA-256 hashes to identify duplicate uploads.
+A Java/Spring Boot parser that turns invoices, purchase orders, sales orders, and purchase bills into normalized JSON. It supports two extraction providers: the original local PDFBox/Tesseract heuristic pipeline and an opt-in Google Document AI Custom Extractor. Both providers feed the same validation, confidence, persistence, API, and review UI layers.
 
 The project includes a responsive React review client with drag-and-drop upload, extraction confidence, line items, validation results, warnings, and JSON export.
 
@@ -12,6 +12,7 @@ This is an accounting-document baseline intended for evaluation and extension. I
 - PDFBox text extraction and positional token capture for digital PDFs
 - Page rendering plus local Tesseract OCR for scanned PDFs; direct OCR for images
 - Generic label aliases and regex extraction, with no supplier-specific templates
+- Google Document AI Custom Extractor integration with nested line-item mapping and Application Default Credentials
 - Classification for invoices, purchase orders, sales orders, and purchase bills
 - Line-item detection for common pharmaceutical and general accounting columns, including serial number, free quantity, pack, batch, expiry, HSN, MRP, rate, discount, split GST, and amount
 - GSTIN, date, numeric, non-negative value, line-total, and invoice-total validation
@@ -29,16 +30,16 @@ This is an accounting-document baseline intended for evaluation and extension. I
 flowchart LR
     A[Upload] --> B[Validation]
     B --> C[Duplicate Check]
-    C --> D[Text Detection]
-    D -->|Usable PDF text| E[Direct Extraction]
-    D -->|Scan or image| F[OCR]
-    E --> G[Field/Table Extraction]
+    C --> D{Extraction provider}
+    D -->|heuristic| E[PDFBox / Tesseract]
+    D -->|google-document-ai| F[Custom Extractor]
+    E --> G[Normalized invoice model]
     F --> G
     G --> H[Validation]
     H --> I[Structured JSON]
 ```
 
-The implementation separates file detection, content extraction, OCR, field extraction, table extraction, validation, orchestration, and persistence. `OcrEngine` is the provider boundary: a later Textract or Document AI adapter can replace the local CLI implementation without changing parsing or API code. Both PDFBox and Tesseract results retain page and bounding-box token data, although this MVP's table fallback is primarily text-row based.
+The implementation separates file detection, extraction-provider selection, cloud response mapping, local OCR, validation, orchestration, and persistence. Set `INVOICE_EXTRACTION_PROVIDER=google-document-ai` to bypass the manual header/table heuristics. PDFBox is still used locally for file safety checks and to distinguish digital from scanned PDFs, but Google performs OCR and semantic extraction.
 
 ## Technology choices
 
@@ -46,6 +47,7 @@ The implementation separates file detection, content extraction, OCR, field extr
 - Maven
 - Apache PDFBox 3
 - Tesseract 5 through a small process adapter (no native JNI/JNA coupling)
+- Google Cloud Document AI Java client, using a configured Custom Extractor processor
 - PostgreSQL 16 and Flyway
 - JUnit 5, AssertJ, MockMvc, H2 in PostgreSQL compatibility mode
 - Docker Compose for a reproducible application/database stack
@@ -123,7 +125,8 @@ Example (abbreviated) response:
   "supplierGstin": "27ABCDE1234F1Z5",
   "customerName": "Sample Retail LLP",
   "customerGstin": "29PQRSX5678K1Z2",
-  "address": "10 Demo Park, Pune, Maharashtra",
+  "supplierAddress": "10 Demo Park, Pune, Maharashtra",
+  "customerAddress": null,
   "subtotal": null,
   "discount": null,
   "cgst": 144.00,
@@ -159,6 +162,31 @@ Example (abbreviated) response:
 
 Optional fields remain present as JSON `null`. Invalid extracted values normally create a validation result, warning, and manual-review flag instead of failing the request. For GST invoices, an expected but unreadable GSTIN is represented by `0.0` in `fieldConfidences` and forces review; high average OCR confidence does not override missing expected fields or failed arithmetic. Invalid files, OCR execution failures/timeouts, and unreadable content use a consistent error shape with `timestamp`, HTTP `status`, machine-readable `code`, `message`, `path`, and `details`.
 
+## Google Document AI Custom Extractor
+
+The integration is implemented but intentionally disabled until a GCP processor is configured. Create the processor schema using [docs/google-document-ai-schema.md](docs/google-document-ai-schema.md); field names are part of the application contract, especially the repeated `line_items` parent and its child fields.
+
+For local development, authenticate with Google Application Default Credentials and set:
+
+```bash
+gcloud auth application-default login
+export INVOICE_EXTRACTION_PROVIDER=google-document-ai
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export DOCUMENT_AI_LOCATION=us
+export DOCUMENT_AI_PROCESSOR_ID=your-processor-id
+# Optional: pin an evaluated version instead of using the processor's default version.
+export DOCUMENT_AI_PROCESSOR_VERSION=your-processor-version
+mvn spring-boot:run
+```
+
+On Cloud Run, use a dedicated service account with permission to process documents. Application Default Credentials are supplied by the runtime, so do not package a service-account key in the image. Configure the same environment variables on the service and grant access to the processor.
+
+The Google provider sends the original bytes and detected MIME type to the regional `processDocument` endpoint. It maps entity mention text, normalized values, nested line items, field confidence, and page count into the existing API model. Missing essential fields, invalid normalized dates or numbers, invalid GSTINs, and inconsistent totals force manual review instead of silently accepting the result.
+
+Duplicate-result caching is namespaced by provider and Document AI processor/version. Uploading a file previously parsed by the heuristic provider therefore still invokes Google once Google mode is enabled.
+
+The application does not automatically create, train, deploy, or mutate a processor. Those are privileged setup operations and should be performed explicitly when the GCP project is configured.
+
 ## Local development
 
 Prerequisites:
@@ -191,6 +219,11 @@ Important configuration variables:
 
 | Variable | Default | Purpose |
 |---|---:|---|
+| `INVOICE_EXTRACTION_PROVIDER` | `heuristic` | `heuristic` or `google-document-ai` |
+| `GOOGLE_CLOUD_PROJECT` | — | GCP project containing the Custom Extractor |
+| `DOCUMENT_AI_LOCATION` | `us` | Processor region and API endpoint prefix |
+| `DOCUMENT_AI_PROCESSOR_ID` | — | Custom Extractor processor ID |
+| `DOCUMENT_AI_PROCESSOR_VERSION` | — | Optional pinned processor version; blank uses the default version |
 | `MAX_UPLOAD_SIZE` | `15MB` | Multipart file/request limit |
 | `MINIMUM_TEXT_CHARACTERS_PER_PAGE` | `40` | Digital-PDF text-layer threshold |
 | `PDF_RENDER_DPI` | `250` | Scanned-PDF OCR render resolution |
@@ -211,7 +244,7 @@ Important configuration variables:
 | `DEMO_MAX_REQUESTS_GLOBAL` | `30` | Requests allowed globally in each demo window |
 | `DEMO_MAX_CONCURRENT_REQUESTS` | `1` | Concurrent demo parses before new requests receive `503` |
 
-No API keys or paid cloud services are required. The service does not log extracted document text.
+The default heuristic provider requires no API key or paid cloud service. Google mode uses Application Default Credentials and incurs Document AI charges. Neither provider logs extracted document text.
 
 ## Samples
 
@@ -257,6 +290,7 @@ tools/                          dependency-free sample generator
 ## Current limitations
 
 - The parser recognizes `INVOICE`, `PURCHASE_ORDER`, `SALES_ORDER`, and `PURCHASE_BILL`; unrelated document families remain `UNKNOWN`.
+- Google mode requires a deployed and evaluated Custom Extractor. Unit tests validate response mapping without making billable API calls; real accuracy cannot be measured until the processor is configured and evaluated on held-out documents.
 - The public `demo` profile is intentionally ephemeral and single-instance. Durable duplicate history remains available only in the normal PostgreSQL profile.
 - Generic regex and row heuristics work best on conventional labels. A header-derived pharmaceutical-table path supports the included serial-numbered order/bill layouts; unrelated rich layouts may still need delimiters or future geometric reconstruction.
 - Positional tokens are retained, but robust geometric table reconstruction and cross-page table stitching are future work.
@@ -270,7 +304,7 @@ tools/                          dependency-free sample generator
 - Geometric row/column reconstruction from the retained bounding boxes
 - OpenCV preprocessing selected by image-quality metrics
 - Mixed digital/scanned page handling and multi-page table continuation
-- Pluggable cloud OCR adapters, document classifiers, and per-field provenance
+- Per-field bounding-box provenance and multi-document processor routing
 - Async batch processing, object storage, observability, and a manual-review workflow
 - International tax identifiers, currencies, locales, and learned layout models
 

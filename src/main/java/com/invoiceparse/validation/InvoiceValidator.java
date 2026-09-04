@@ -50,12 +50,18 @@ public class InvoiceValidator {
 
     private void validateTotal(List<ValidationResultResponse> results, ParsedInvoice invoice) {
         if (invoice.grandTotal == null) return;
+        BigDecimal lineSum = invoice.lineItems.isEmpty() ? null : invoice.lineItems.stream()
+                .map(i -> i.lineTotal() == null ? BigDecimal.ZERO : i.lineTotal())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal base = invoice.taxableAmount != null ? invoice.taxableAmount : invoice.subtotal;
-        if (base == null && !invoice.lineItems.isEmpty()) base = invoice.lineItems.stream()
-                .map(i -> i.lineTotal() == null ? BigDecimal.ZERO : i.lineTotal()).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (base == null) base = lineSum;
         if (base == null) return;
         BigDecimal expected = base;
-        if (invoice.taxableAmount == null && invoice.discount != null) expected = expected.subtract(invoice.discount);
+        if (invoice.taxableAmount == null && invoice.discount != null) {
+            boolean subtotalAlreadyNet = lineSum != null
+                    && lineSum.subtract(invoice.discount).subtract(base).abs().compareTo(tolerance) <= 0;
+            if (!subtotalAlreadyNet) expected = expected.subtract(invoice.discount);
+        }
         if (invoice.cgst != null) expected = expected.add(invoice.cgst);
         if (invoice.sgst != null) expected = expected.add(invoice.sgst);
         if (invoice.igst != null) expected = expected.add(invoice.igst);

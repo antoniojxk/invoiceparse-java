@@ -16,12 +16,14 @@ public record ParseDocumentResponse(
         BigDecimal discount, BigDecimal cgst, BigDecimal sgst, BigDecimal igst,
         BigDecimal taxableAmount, BigDecimal roundOff, BigDecimal grandTotal, String currency,
         List<LineItemResponse> lineItems, List<ValidationResultResponse> validationResults, Map<String, Double> fieldConfidences,
-        double overallConfidence, boolean manualReviewRequired, List<String> warnings
+        double overallConfidence, boolean manualReviewRequired, List<String> warnings,
+        String documentNumber, LocalDate documentDate
 ) {
     public ParseDocumentResponse withIdentity(UUID id, String filename, String hash, boolean isDuplicate) {
         return new ParseDocumentResponse(id, filename, hash, isDuplicate, documentType, sourceType, pageCount,
                 invoiceNumber, invoiceDate, supplierName, supplierGstin, customerName, customerGstin, address,
                 subtotal, discount, cgst, sgst, igst, taxableAmount, roundOff, grandTotal, currency,
-                lineItems, validationResults, fieldConfidences, overallConfidence, manualReviewRequired, warnings);
+                lineItems, validationResults, fieldConfidences, overallConfidence, manualReviewRequired, warnings,
+                documentNumber, documentDate);
     }
 }

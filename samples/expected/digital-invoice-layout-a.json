@@ -23,8 +23,8 @@
   "grandTotal": 1888.00,
   "currency": "INR",
   "lineItems": [
-    {"productName":"Copper Cable","description":"Copper Cable","hsnSac":"8544","batchNumber":null,"expiryDate":null,"quantity":2,"unit":"roll","unitRate":500.00,"discount":null,"gstPercentage":18,"taxableAmount":1000.00,"lineTotal":1000.00,"confidence":0.82},
-    {"productName":"USB Adapter","description":"USB Adapter","hsnSac":"8504","batchNumber":null,"expiryDate":null,"quantity":3,"unit":"pcs","unitRate":200.00,"discount":null,"gstPercentage":18,"taxableAmount":600.00,"lineTotal":600.00,"confidence":0.82}
+    {"productName":"Copper Cable","description":"Copper Cable","hsnSac":"8544","batchNumber":null,"expiryDate":null,"quantity":2,"unit":"roll","unitRate":500.00,"discount":null,"gstPercentage":18,"taxableAmount":1000.00,"lineTotal":1000.00,"confidence":0.82,"serialNumber":null,"quantityText":"2","freeQuantity":null,"pack":null,"expiryText":null,"mrp":null,"discountPercentage":null,"sgstPercentage":null,"sgstAmount":null,"cgstPercentage":null,"cgstAmount":null,"igstPercentage":null,"igstAmount":null},
+    {"productName":"USB Adapter","description":"USB Adapter","hsnSac":"8504","batchNumber":null,"expiryDate":null,"quantity":3,"unit":"pcs","unitRate":200.00,"discount":null,"gstPercentage":18,"taxableAmount":600.00,"lineTotal":600.00,"confidence":0.82,"serialNumber":null,"quantityText":"3","freeQuantity":null,"pack":null,"expiryText":null,"mrp":null,"discountPercentage":null,"sgstPercentage":null,"sgstAmount":null,"cgstPercentage":null,"cgstAmount":null,"igstPercentage":null,"igstAmount":null}
   ],
   "validationResults": [
     {"code":"GSTIN_FORMAT","field":"supplierGstin","valid":true,"message":"GSTIN format is valid"},
@@ -36,5 +36,7 @@
   "fieldConfidences": {"invoiceNumber":0.92,"invoiceDate":0.92,"supplierName":0.87,"supplierGstin":0.92,"customerName":0.87,"customerGstin":0.92,"address":0.84,"cgst":0.92,"sgst":0.92,"taxableAmount":0.92,"grandTotal":0.92},
   "overallConfidence": 0.96,
   "manualReviewRequired": false,
-  "warnings": []
+  "warnings": [],
+  "documentNumber": "SI-2026-104",
+  "documentDate": "2026-08-07"
 }

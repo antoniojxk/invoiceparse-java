@@ -1,10 +1,10 @@
 # InvoiceParse Java
 
-A local-first Java/Spring Boot MVP that turns invoice PDFs and images into normalized JSON. It detects usable PDF text, falls back to Tesseract for scanned content, extracts common header fields and basic line-item tables, validates arithmetic, and records SHA-256 hashes to identify duplicate uploads.
+A local-first Java/Spring Boot parser that turns invoices, purchase orders, sales orders, and purchase bills into normalized JSON. It detects usable PDF text, falls back to Tesseract for scanned content, extracts common header fields and line-item tables, validates arithmetic, and records SHA-256 hashes to identify duplicate uploads.
 
 The project includes a responsive React review client with drag-and-drop upload, extraction confidence, line items, validation results, warnings, and JSON export.
 
-This is an honest invoice-focused baseline intended for evaluation and extension. It is not a production-grade universal document parser, and extraction accuracy depends on document quality, OCR quality, and layout.
+This is an accounting-document baseline intended for evaluation and extension. It is not a production-grade universal document parser, and extraction accuracy depends on document quality, OCR quality, and layout.
 
 ## Features
 
@@ -12,7 +12,8 @@ This is an honest invoice-focused baseline intended for evaluation and extension
 - PDFBox text extraction and positional token capture for digital PDFs
 - Page rendering plus local Tesseract OCR for scanned PDFs; direct OCR for images
 - Generic label aliases and regex extraction, with no supplier-specific templates
-- Basic line-item detection for common Description/Product, Quantity, Rate, Tax, and Amount columns
+- Classification for invoices, purchase orders, sales orders, and purchase bills
+- Line-item detection for common pharmaceutical and general accounting columns, including serial number, free quantity, pack, batch, expiry, HSN, MRP, rate, discount, split GST, and amount
 - GSTIN, date, numeric, non-negative value, line-total, and invoice-total validation
 - Field/source-informed confidence, expected-field coverage, warnings, and a manual-review flag
 - Conservative review safeguards when GSTINs are expected but missing or invoice arithmetic is inconsistent
@@ -91,7 +92,7 @@ gcloud run deploy invoiceparse-demo \
 
 The recommended single-instance and single-concurrency settings bound OCR resource use and match the application's demo request guard. Set a Google Cloud budget alert before sharing the URL publicly. The demo UI includes a bundled synthetic invoice so visitors do not need to upload a real document.
 
-## Upload an invoice
+## Upload a document
 
 The API accepts one multipart field named `file`:
 
@@ -114,6 +115,8 @@ Example (abbreviated) response:
   "documentType": "INVOICE",
   "sourceType": "DIGITAL_PDF",
   "pageCount": 1,
+  "documentNumber": "SI-2026-104",
+  "documentDate": "2026-08-07",
   "invoiceNumber": "SI-2026-104",
   "invoiceDate": "2026-08-07",
   "supplierName": "Example Components Pvt Ltd",
@@ -228,7 +231,7 @@ java -Djava.awt.headless=true tools/SampleInvoiceGenerator.java
 mvn test
 ```
 
-The suite covers digital/scanned PDF routing, signature validation, GSTIN validation, date and amount normalization, header extraction, two line-item layouts, constrained numeric-tail behavior, line/invoice total validation, OCR timeout enforcement, confidence/review regression cases, API errors, persistence, and duplicate detection. The Docker smoke test described under Quick start exercises real PostgreSQL and Tesseract.
+The suite covers digital/scanned PDF routing, signature validation, document classification, party-role assignment, GSTIN validation, date and amount normalization, general and pharmaceutical line-item layouts, free quantities, watermark-interrupted rows, line/invoice total validation, OCR timeout enforcement, confidence/review regression cases, API errors, persistence, and duplicate detection. The Docker smoke test described under Quick start exercises real PostgreSQL and Tesseract.
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs `mvn test` on Java 21 for every push and pull request.
 
@@ -253,9 +256,9 @@ tools/                          dependency-free sample generator
 
 ## Current limitations
 
-- The parser recognizes invoices only; `documentType` is `INVOICE` or `UNKNOWN` rather than a broad document classifier.
+- The parser recognizes `INVOICE`, `PURCHASE_ORDER`, `SALES_ORDER`, and `PURCHASE_BILL`; unrelated document families remain `UNKNOWN`.
 - The public `demo` profile is intentionally ephemeral and single-instance. Durable duplicate history remains available only in the normal PostgreSQL profile.
-- Generic regex and row heuristics work best on conventional labels and clean, single-line item rows. The undelimited numeric-tail fallback is intentionally limited to Description/Quantity/Rate/Total rows with consistent arithmetic; richer layouts need recoverable delimiters or future geometric reconstruction.
+- Generic regex and row heuristics work best on conventional labels. A header-derived pharmaceutical-table path supports the included serial-numbered order/bill layouts; unrelated rich layouts may still need delimiters or future geometric reconstruction.
 - Positional tokens are retained, but robust geometric table reconstruction and cross-page table stitching are future work.
 - OCR uses English data and no deskew/denoise stage by default. Install/configure additional Tesseract languages as needed.
 - GSTIN validation checks the official-looking 15-character structure, not registration existence or checksum ownership.

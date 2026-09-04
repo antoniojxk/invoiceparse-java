@@ -12,6 +12,19 @@ export interface LineItem {
   taxableAmount: number | null;
   lineTotal: number | null;
   confidence: number;
+  serialNumber: number | null;
+  quantityText: string | null;
+  freeQuantity: number | null;
+  pack: string | null;
+  expiryText: string | null;
+  mrp: number | null;
+  discountPercentage: number | null;
+  sgstPercentage: number | null;
+  sgstAmount: number | null;
+  cgstPercentage: number | null;
+  cgstAmount: number | null;
+  igstPercentage: number | null;
+  igstAmount: number | null;
 }
 
 export interface ValidationResult {
@@ -51,6 +64,8 @@ export interface ParseDocumentResponse {
   overallConfidence: number;
   manualReviewRequired: boolean;
   warnings: string[];
+  documentNumber: string | null;
+  documentDate: string | null;
 }
 
 export interface ApiError {

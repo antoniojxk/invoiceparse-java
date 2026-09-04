@@ -47,6 +47,7 @@ class DocumentControllerIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.duplicate").value(false))
                 .andExpect(jsonPath("$.sourceType").value("DIGITAL_PDF"))
                 .andExpect(jsonPath("$.invoiceNumber").value("SI-2026-104"))
+                .andExpect(jsonPath("$.documentNumber").value("SI-2026-104"))
                 .andExpect(jsonPath("$.lineItems.length()").value(1))
                 .andExpect(jsonPath("$.grandTotal").value(1180.00));
         mvc.perform(multipart("/api/v1/documents/parse").file(file))

@@ -73,7 +73,9 @@ public class DocumentProcessingService {
         var assessment = confidenceAssessor.assess(invoice, content, validation);
         double confidence = assessment.overallConfidence();
         boolean manualReview = assessment.manualReviewRequired();
-        DocumentType documentType = invoice.invoiceNumber != null || invoice.grandTotal != null ? DocumentType.INVOICE : DocumentType.UNKNOWN;
+        DocumentType documentType = invoice.documentType != DocumentType.UNKNOWN
+                ? invoice.documentType
+                : invoice.invoiceNumber != null || invoice.grandTotal != null ? DocumentType.INVOICE : DocumentType.UNKNOWN;
         UUID id = UUID.randomUUID();
         String filename = safeFilename(file.getOriginalFilename());
         var response = new ParseDocumentResponse(id, filename, hash, false, documentType, content.sourceType(), content.pageCount(),
@@ -81,7 +83,7 @@ public class DocumentProcessingService {
                 invoice.customerName, invoice.customerGstin, invoice.address, invoice.subtotal, invoice.discount,
                 invoice.cgst, invoice.sgst, invoice.igst, invoice.taxableAmount, invoice.roundOff, invoice.grandTotal,
                 invoice.currency, invoice.lineItems, validation, java.util.Map.copyOf(invoice.fieldConfidences),
-                confidence, manualReview, List.copyOf(warnings));
+                confidence, manualReview, List.copyOf(warnings), invoice.invoiceNumber, invoice.invoiceDate);
         repository.saveAndFlush(new DocumentRecord(id, hash, filename, serialize(response), Instant.now()));
         log.info("Processed document: documentId={}, filename={}, sourceType={}, pages={}, reviewRequired={}",
                 id, filename, content.sourceType(), content.pageCount(), manualReview);

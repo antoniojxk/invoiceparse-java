@@ -48,9 +48,9 @@ export default function App() {
   function selectFile(nextFile: File) {
     let validationError: string | null = null;
     const hasAcceptedExtension = /\.(pdf|png|jpe?g)$/i.test(nextFile.name);
-    if (!ACCEPTED_TYPES.includes(nextFile.type) && !hasAcceptedExtension) validationError = "Choose a PDF, PNG, JPG, or JPEG invoice.";
+    if (!ACCEPTED_TYPES.includes(nextFile.type) && !hasAcceptedExtension) validationError = "Choose a PDF, PNG, JPG, or JPEG document.";
     else if (nextFile.size > MAX_FILE_BYTES) validationError = "This file is larger than the 15 MB upload limit.";
-    else if (nextFile.size === 0) validationError = "This file is empty. Choose another invoice.";
+    else if (nextFile.size === 0) validationError = "This file is empty. Choose another document.";
     setError(validationError);
     setFile(validationError ? null : nextFile);
   }
@@ -64,7 +64,7 @@ export default function App() {
       setScreen("results");
       setApiOnline(true);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "The invoice could not be processed.");
+      setError(requestError instanceof Error ? requestError.message : "The document could not be processed.");
       setScreen("upload");
       void getApiHealth().then(setApiOnline);
     }
@@ -145,7 +145,7 @@ function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile
       <div className="upload-layout">
         <section className="intro-panel">
           <div className="eyebrow"><Sparkles size={14} /> Structured data, in seconds</div>
-          <h1>Turn invoices into <em>review-ready</em> data.</h1>
+          <h1>Turn accounting documents into <em>review-ready</em> data.</h1>
           <p className="intro-copy">Upload a PDF or image. InvoiceParse detects text, runs OCR when needed, validates the totals, and returns clean, structured JSON.</p>
           <div className="process-list" aria-label="Processing pipeline">
             <ProcessStep icon={<FileSearch />} number="01" title="Detect" copy="Text PDF, scan, or image" />
@@ -155,7 +155,7 @@ function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile
         </section>
 
         <section className="upload-panel" aria-labelledby="upload-title">
-          <div className="upload-panel-heading"><div><span className="step-label">PUBLIC DEMO</span><h2 id="upload-title">Choose an invoice</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Ephemeral processing</div></div>
+          <div className="upload-panel-heading"><div><span className="step-label">PUBLIC DEMO</span><h2 id="upload-title">Choose a document</h2></div><div className="privacy-chip"><LockKeyhole size={13} /> Ephemeral processing</div></div>
           <label
             className={`dropzone ${isDragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
             onDragEnter={(event) => { event.preventDefault(); onDragChange(true); }}
@@ -172,7 +172,7 @@ function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile
               </div>
             ) : (
               <div className="dropzone-empty">
-                <div className="upload-icon"><UploadCloud size={28} /></div><strong>Drop your invoice here</strong><span>or <u>browse files</u> from your computer</span>
+                <div className="upload-icon"><UploadCloud size={28} /></div><strong>Drop your document here</strong><span>or <u>browse files</u> from your computer</span>
                 <div className="file-types"><span><FileText size={13} /> PDF</span><span><ImageIcon size={13} /> PNG</span><span><ImageIcon size={13} /> JPG</span><span>MAX 5 MB</span></div>
               </div>
             )}
@@ -182,7 +182,7 @@ function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile
             {sampleLoading ? <LoaderCircle className="spinner" size={15} /> : <FileCheck2 size={15} />}
             {sampleLoading ? "Loading sample…" : "Use the synthetic sample"}
           </button>
-          <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse invoice <ChevronRight size={18} /></button>
+          <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse document <ChevronRight size={18} /></button>
           <p className="upload-note">Use synthetic or non-sensitive documents. Originals are discarded after processing; extracted results may remain in memory for up to one hour.</p>
         </section>
       </div>
@@ -230,7 +230,7 @@ function ProcessingScreen({ filename }: { filename: string }) {
   return (
     <section className="processing-card" aria-live="polite">
       <div className="processing-visual"><div className="scan-document"><span /><span /><span /><span /></div><div className="scan-beam" /></div>
-      <span className="step-label">ANALYZING DOCUMENT</span><h1>Reading your invoice</h1><p title={filename}>{filename}</p>
+      <span className="step-label">ANALYZING DOCUMENT</span><h1>Reading your document</h1><p title={filename}>{filename}</p>
       <div className="processing-steps">{steps.map((step, index) => <div className={index <= activeStep ? "active" : ""} key={step}>{index < activeStep ? <Check size={14} /> : index === activeStep ? <LoaderCircle className="spinner" size={14} /> : <span />}{step}</div>)}</div>
       <small>OCR can take a little longer for scanned, multi-page documents.</small>
     </section>
@@ -259,10 +259,10 @@ function ResultsScreen({ result, copied, onReset, onCopy, onDownload }: ResultsS
 
       <div className="result-grid">
         <section className="data-card details-card">
-          <CardHeading icon={<FileText />} title="Invoice details" eyebrow="EXTRACTED FIELDS" />
+          <CardHeading icon={<FileText />} title="Document details" eyebrow="EXTRACTED FIELDS" />
           <div className="detail-grid">
-            <DataField label="Invoice number" value={result.invoiceNumber} confidence={result.fieldConfidences.invoiceNumber} />
-            <DataField label="Invoice date" value={formatDate(result.invoiceDate)} confidence={result.fieldConfidences.invoiceDate} />
+            <DataField label={`${documentTypeLabel(result.documentType)} number`} value={result.documentNumber ?? result.invoiceNumber} confidence={result.fieldConfidences.invoiceNumber} />
+            <DataField label={`${documentTypeLabel(result.documentType)} date`} value={formatDate(result.documentDate ?? result.invoiceDate)} confidence={result.fieldConfidences.invoiceDate} />
             <DataField label="Supplier" value={result.supplierName} confidence={result.fieldConfidences.supplierName} />
             <DataField label="Supplier GSTIN" value={result.supplierGstin} confidence={result.fieldConfidences.supplierGstin} mono />
             <DataField label="Customer" value={result.customerName} confidence={result.fieldConfidences.customerName} />
@@ -278,7 +278,7 @@ function ResultsScreen({ result, copied, onReset, onCopy, onDownload }: ResultsS
 
       <section className="data-card table-card"><CardHeading icon={<ScanLine />} title="Line items" eyebrow={`${result.lineItems.length} ITEMS DETECTED`} />{result.lineItems.length > 0 ? <LineItemsTable items={result.lineItems} currency={result.currency} /> : <EmptyState copy="No line items were confidently detected." />}</section>
       <section className="data-card validation-card"><CardHeading icon={<ShieldCheck />} title="Validation checks" eyebrow="ARITHMETIC & FORMAT" />{result.validationResults.length > 0 ? <div className="validation-list">{result.validationResults.map((validation, index) => <ValidationRow validation={validation} key={`${validation.code}-${index}`} />)}</div> : <EmptyState copy="No validation checks were returned." />}</section>
-      <div className="result-end"><p><strong>Document ID</strong> {result.documentId}</p><button className="text-button" type="button" onClick={onReset}><RotateCcw size={15} /> Parse another invoice</button></div>
+      <div className="result-end"><p><strong>Document ID</strong> {result.documentId}</p><button className="text-button" type="button" onClick={onReset}><RotateCcw size={15} /> Parse another document</button></div>
     </div>
   );
 }
@@ -301,7 +301,7 @@ function AmountRow({ label, value, currency }: { label: string; value: number | 
 }
 
 function LineItemsTable({ items, currency }: { items: LineItem[]; currency: string | null }) {
-  return <div className="table-scroll"><table><thead><tr><th>Item</th><th>HSN / SAC</th><th>Qty</th><th>Rate</th><th>GST</th><th className="align-right">Amount</th><th><span className="sr-only">Confidence</span></th></tr></thead><tbody>{items.map((item, index) => <tr key={`${item.productName}-${index}`}><td><strong>{item.productName || item.description || `Item ${index + 1}`}</strong>{item.productName && item.description && item.productName !== item.description && <small>{item.description}</small>}</td><td className="mono">{item.hsnSac || "—"}</td><td>{item.quantity ?? "—"}{item.unit ? ` ${item.unit}` : ""}</td><td>{formatMoney(item.unitRate, currency)}</td><td>{item.gstPercentage !== null ? `${item.gstPercentage}%` : "—"}</td><td className="align-right"><strong>{formatMoney(item.lineTotal, currency)}</strong></td><td><ConfidenceDot value={item.confidence} /></td></tr>)}</tbody></table></div>;
+  return <div className="table-scroll"><table><thead><tr><th>Item</th><th>HSN / SAC</th><th>Qty</th><th>Rate</th><th>GST</th><th className="align-right">Amount</th><th><span className="sr-only">Confidence</span></th></tr></thead><tbody>{items.map((item, index) => <tr key={`${item.productName}-${index}`}><td><strong>{item.productName || item.description || `Item ${index + 1}`}</strong>{(item.pack || item.batchNumber || item.expiryText) && <small>{[item.pack && `Pack ${item.pack}`, item.batchNumber && `Batch ${item.batchNumber}`, item.expiryText && `Exp ${item.expiryText}`].filter(Boolean).join(" · ")}</small>}</td><td className="mono">{item.hsnSac || "—"}</td><td>{item.quantityText ?? item.quantity ?? "—"}{item.unit ? ` ${item.unit}` : ""}</td><td>{formatMoney(item.unitRate, currency)}</td><td>{item.gstPercentage !== null ? `${item.gstPercentage}%` : "—"}</td><td className="align-right"><strong>{formatMoney(item.lineTotal, currency)}</strong></td><td><ConfidenceDot value={item.confidence} /></td></tr>)}</tbody></table></div>;
 }
 
 function ValidationRow({ validation }: { validation: ValidationResult }) {
@@ -313,4 +313,5 @@ function formatBytes(bytes: number) { return bytes < 1024 * 1024 ? `${Math.max(1
 function formatDate(value: string | null) { if (!value) return null; const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(date); }
 function formatMoney(value: number | null, currency: string | null) { if (value === null || value === undefined) return "—"; try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: currency || "INR", minimumFractionDigits: 2 }).format(value); } catch { return `${currency || ""} ${value.toFixed(2)}`.trim(); } }
 function sourceLabel(source: ParseDocumentResponse["sourceType"]) { return { DIGITAL_PDF: "Digital PDF", SCANNED_PDF: "Scanned PDF · OCR", IMAGE: "Image · OCR" }[source]; }
+function documentTypeLabel(type: string) { return ({ PURCHASE_ORDER: "Purchase order", SALES_ORDER: "Sales order", PURCHASE_BILL: "Purchase bill", INVOICE: "Invoice" } as Record<string, string>)[type] || "Document"; }
 function humanizeCode(code: string) { return code.toLowerCase().split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" "); }

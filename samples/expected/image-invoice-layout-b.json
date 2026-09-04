@@ -23,9 +23,9 @@
   "grandTotal": 2301.00,
   "currency": "INR",
   "lineItems": [
-    {"productName":"Paper Ream A4","description":"Paper Ream A4","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":5,"unit":null,"unitRate":240.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":1200.00,"confidence":0.65},
-    {"productName":"Marker Pack","description":"Marker Pack","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":2,"unit":null,"unitRate":150.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":300.00,"confidence":0.65},
-    {"productName":"Desk Organizer","description":"Desk Organizer","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":1,"unit":null,"unitRate":450.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":450.00,"confidence":0.65}
+    {"productName":"Paper Ream A4","description":"Paper Ream A4","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":5,"unit":null,"unitRate":240.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":1200.00,"confidence":0.65,"serialNumber":null,"quantityText":"5","freeQuantity":null,"pack":null,"expiryText":null,"mrp":null,"discountPercentage":null,"sgstPercentage":null,"sgstAmount":null,"cgstPercentage":null,"cgstAmount":null,"igstPercentage":null,"igstAmount":null},
+    {"productName":"Marker Pack","description":"Marker Pack","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":2,"unit":null,"unitRate":150.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":300.00,"confidence":0.65,"serialNumber":null,"quantityText":"2","freeQuantity":null,"pack":null,"expiryText":null,"mrp":null,"discountPercentage":null,"sgstPercentage":null,"sgstAmount":null,"cgstPercentage":null,"cgstAmount":null,"igstPercentage":null,"igstAmount":null},
+    {"productName":"Desk Organizer","description":"Desk Organizer","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":1,"unit":null,"unitRate":450.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":450.00,"confidence":0.65,"serialNumber":null,"quantityText":"1","freeQuantity":null,"pack":null,"expiryText":null,"mrp":null,"discountPercentage":null,"sgstPercentage":null,"sgstAmount":null,"cgstPercentage":null,"cgstAmount":null,"igstPercentage":null,"igstAmount":null}
   ],
   "validationResults": [
     {"code":"GSTIN_FORMAT","field":"supplierGstin","valid":true,"message":"GSTIN format is valid"},
@@ -38,5 +38,7 @@
   "fieldConfidences": {"invoiceNumber":0.94,"invoiceDate":0.94,"supplierName":0.89,"supplierGstin":0.94,"customerName":0.89,"customerGstin":0.94,"subtotal":0.94,"igst":0.94,"grandTotal":0.94},
   "overallConfidence": 0.95,
   "manualReviewRequired": false,
-  "warnings": []
+  "warnings": [],
+  "documentNumber": "PI-7781",
+  "documentDate": "2026-08-18"
 }

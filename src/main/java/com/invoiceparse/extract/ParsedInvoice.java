@@ -1,6 +1,7 @@
 package com.invoiceparse.extract;
 
 import com.invoiceparse.api.LineItemResponse;
+import com.invoiceparse.model.DocumentType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class ParsedInvoice {
+    public DocumentType documentType = DocumentType.UNKNOWN;
     public String invoiceNumber;
     public LocalDate invoiceDate;
     public String supplierName;

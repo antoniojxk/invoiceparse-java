@@ -14,7 +14,7 @@ COPY samples samples
 COPY --from=frontend-build /frontend/dist src/main/resources/static
 RUN mvn -B -ntp -DskipTests package
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng curl \
     && rm -rf /var/lib/apt/lists/*

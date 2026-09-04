@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:invoiceparse;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+invoiceparse:
+  minimum-text-characters-per-page: 20
+  pdf-render-dpi: 120
+  tesseract-command: tesseract
+  tesseract-language: eng
+  minimum-overall-confidence: 0.70
+  total-tolerance: 1.00

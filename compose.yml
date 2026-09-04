@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: invoiceparse
+      POSTGRES_USER: invoiceparse
+      POSTGRES_PASSWORD: invoiceparse
+    volumes:
+      - invoiceparse-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoiceparse -d invoiceparse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/invoiceparse
+      DATABASE_USERNAME: invoiceparse
+      DATABASE_PASSWORD: invoiceparse
+      TESSERACT_LANGUAGE: eng
+      MAX_UPLOAD_SIZE: 15MB
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  invoiceparse-postgres:

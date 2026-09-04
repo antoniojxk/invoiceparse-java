@@ -1,0 +1,40 @@
+{
+  "documentId": null,
+  "originalFilename": "digital-invoice-layout-a.pdf",
+  "fileHash": null,
+  "duplicate": false,
+  "documentType": "INVOICE",
+  "sourceType": "DIGITAL_PDF",
+  "pageCount": 1,
+  "invoiceNumber": "SI-2026-104",
+  "invoiceDate": "2026-08-07",
+  "supplierName": "Example Components Pvt Ltd",
+  "supplierGstin": "27ABCDE1234F1Z5",
+  "customerName": "Sample Retail LLP",
+  "customerGstin": "29PQRSX5678K1Z2",
+  "address": "10 Demo Park, Pune, Maharashtra",
+  "subtotal": null,
+  "discount": null,
+  "cgst": 144.00,
+  "sgst": 144.00,
+  "igst": null,
+  "taxableAmount": 1600.00,
+  "roundOff": null,
+  "grandTotal": 1888.00,
+  "currency": "INR",
+  "lineItems": [
+    {"productName":"Copper Cable","description":"Copper Cable","hsnSac":"8544","batchNumber":null,"expiryDate":null,"quantity":2,"unit":"roll","unitRate":500.00,"discount":null,"gstPercentage":18,"taxableAmount":1000.00,"lineTotal":1000.00,"confidence":0.82},
+    {"productName":"USB Adapter","description":"USB Adapter","hsnSac":"8504","batchNumber":null,"expiryDate":null,"quantity":3,"unit":"pcs","unitRate":200.00,"discount":null,"gstPercentage":18,"taxableAmount":600.00,"lineTotal":600.00,"confidence":0.82}
+  ],
+  "validationResults": [
+    {"code":"GSTIN_FORMAT","field":"supplierGstin","valid":true,"message":"GSTIN format is valid"},
+    {"code":"GSTIN_FORMAT","field":"customerGstin","valid":true,"message":"GSTIN format is valid"},
+    {"code":"LINE_TOTAL","field":"lineItems[0].lineTotal","valid":true,"message":"Line total is consistent"},
+    {"code":"LINE_TOTAL","field":"lineItems[1].lineTotal","valid":true,"message":"Line total is consistent"},
+    {"code":"INVOICE_TOTAL","field":"grandTotal","valid":true,"message":"Invoice total is consistent"}
+  ],
+  "fieldConfidences": {"invoiceNumber":0.92,"invoiceDate":0.92,"supplierName":0.87,"supplierGstin":0.92,"customerName":0.87,"customerGstin":0.92,"address":0.84,"cgst":0.92,"sgst":0.92,"taxableAmount":0.92,"grandTotal":0.92},
+  "overallConfidence": 0.96,
+  "manualReviewRequired": false,
+  "warnings": []
+}

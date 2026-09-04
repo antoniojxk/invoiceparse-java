@@ -1,0 +1,57 @@
+%PDF-1.4
+%synthetic
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Length 1042 >>
+stream
+0.11 0.24 0.38 rg 0 742 595 100 re f
+BT /F2 22 Tf 1 1 1 rg 46 792 Td (TAX INVOICE - SYNTHETIC DEMO) Tj ET
+BT /F2 11 Tf 0.82 0.90 0.98 rg 46 766 Td (Selectable text PDF / synthetic data only) Tj ET
+0.94 0.96 0.98 rg 40 581 515 24 re f
+0.11 0.24 0.38 RG 0.7 w 40 580 m 555 580 l S
+BT /F1 10 Tf 0.08 0.10 0.12 rg 46 714 Td 18 TL
+(Supplier: Example Components Pvt Ltd) Tj T*
+(Supplier GSTIN: 27ABCDE1234F1Z5) Tj T*
+(Address: 10 Demo Park, Pune, Maharashtra) Tj T*
+(Customer: Sample Retail LLP) Tj T*
+(Customer GSTIN: 29PQRSX5678K1Z2) Tj T*
+(Invoice No: SI-2026-104) Tj T*
+(Invoice Date: 07-Aug-2026) Tj T*
+(Description | HSN/SAC | Qty | Unit | Rate | GST % | Taxable Amount | Total) Tj T*
+(Copper Cable | 8544 | 2 | roll | 500.00 | 18 | 1000.00 | 1000.00) Tj T*
+(USB Adapter | 8504 | 3 | pcs | 200.00 | 18 | 600.00 | 600.00) Tj T*
+(Taxable Amount: 1600.00) Tj T*
+(CGST: 144.00) Tj T*
+(SGST: 144.00) Tj T*
+(Grand Total: INR 1888.00) Tj T*
+ET
+BT /F1 8 Tf 0.35 0.38 0.42 rg 46 46 Td (Generated for InvoiceParse Java - no real commercial data) Tj ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000020 00000 n 
+0000000069 00000 n 
+0000000126 00000 n 
+0000000262 00000 n 
+0000000330 00000 n 
+0000000405 00000 n 
+trailer << /Size 7 /Root 1 0 R >>
+startxref
+1498
+%%EOF

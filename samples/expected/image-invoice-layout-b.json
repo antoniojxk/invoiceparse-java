@@ -1,0 +1,42 @@
+{
+  "documentId": null,
+  "originalFilename": "image-invoice-layout-b.png",
+  "fileHash": null,
+  "duplicate": false,
+  "documentType": "INVOICE",
+  "sourceType": "IMAGE",
+  "pageCount": 1,
+  "invoiceNumber": "PI-7781",
+  "invoiceDate": "2026-08-18",
+  "supplierName": "NORTHWIND WHOLESALE",
+  "supplierGstin": "19ABCDE1234F1Z7",
+  "customerName": "Sample Office Supplies",
+  "customerGstin": "29PQRSX5678K1Z2",
+  "address": null,
+  "subtotal": 1950.00,
+  "discount": null,
+  "cgst": null,
+  "sgst": null,
+  "igst": 351.00,
+  "taxableAmount": null,
+  "roundOff": null,
+  "grandTotal": 2301.00,
+  "currency": "INR",
+  "lineItems": [
+    {"productName":"Paper Ream A4","description":"Paper Ream A4","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":5,"unit":null,"unitRate":240.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":1200.00,"confidence":0.65},
+    {"productName":"Marker Pack","description":"Marker Pack","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":2,"unit":null,"unitRate":150.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":300.00,"confidence":0.65},
+    {"productName":"Desk Organizer","description":"Desk Organizer","hsnSac":null,"batchNumber":null,"expiryDate":null,"quantity":1,"unit":null,"unitRate":450.00,"discount":null,"gstPercentage":null,"taxableAmount":null,"lineTotal":450.00,"confidence":0.65}
+  ],
+  "validationResults": [
+    {"code":"GSTIN_FORMAT","field":"supplierGstin","valid":true,"message":"GSTIN format is valid"},
+    {"code":"GSTIN_FORMAT","field":"customerGstin","valid":true,"message":"GSTIN format is valid"},
+    {"code":"LINE_TOTAL","field":"lineItems[0].lineTotal","valid":true,"message":"Line total is consistent"},
+    {"code":"LINE_TOTAL","field":"lineItems[1].lineTotal","valid":true,"message":"Line total is consistent"},
+    {"code":"LINE_TOTAL","field":"lineItems[2].lineTotal","valid":true,"message":"Line total is consistent"},
+    {"code":"INVOICE_TOTAL","field":"grandTotal","valid":true,"message":"Invoice total is consistent"}
+  ],
+  "fieldConfidences": {"invoiceNumber":0.94,"invoiceDate":0.94,"supplierName":0.89,"supplierGstin":0.94,"customerName":0.89,"customerGstin":0.94,"subtotal":0.94,"igst":0.94,"grandTotal":0.94},
+  "overallConfidence": 0.95,
+  "manualReviewRequired": false,
+  "warnings": []
+}

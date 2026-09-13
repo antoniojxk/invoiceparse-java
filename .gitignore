@@ -9,3 +9,18 @@ data/
 tmp/
 *.log
 .local
+
+frontend/public/samples/
+frontend/*.tsbuildinfo
+frontend/.env.local
+frontend/.env.*.local
+.firebase/
+
+# Deployment configuration and generated Hosting manifest
+frontend/.env.hosting
+/firebase.json
+/.firebaserc
+
+# Local notes; excluded from version control and build contexts
+.private/
+gha-creds-*.json

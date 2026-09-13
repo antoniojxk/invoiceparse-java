@@ -309,3 +309,21 @@ tools/                          dependency-free sample generator
 - International tax identifiers, currencies, locales, and learned layout models
 
 Licensed under the [MIT License](LICENSE).
+
+## Separate static frontend
+
+The React client can be hosted independently from the Spring Boot API.
+Set `VITE_API_BASE_URL` to the HTTPS API origin in the build environment, then run:
+
+```sh
+npm --prefix frontend ci
+npm --prefix frontend run build:hosting
+```
+
+The build produces `frontend/dist` and a generated `firebase.json` from
+`firebase.template.json`. The frontend and CSP use the same API origin.
+For local builds, copy `frontend/.env.example` to ignored
+`frontend/.env.hosting.local` and set the URL there. Configure the API's
+`FRONTEND_ORIGINS` with the exact frontend origins that may access it.
+The existing `npm --prefix frontend run build` command still produces the
+same-origin client for the bundled Docker deployment.

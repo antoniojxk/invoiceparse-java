@@ -8,7 +8,6 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:8080",
       "/actuator": "http://localhost:8080",
-      "/samples": "http://localhost:8080",
     },
   },
 });

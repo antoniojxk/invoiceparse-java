@@ -4,9 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "vite --config vite.config.ts",
+    "build": "tsc -b && vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts",
+    "predev": "node scripts/prepare-samples.mjs",
+    "prebuild": "node scripts/prepare-samples.mjs",
+    "build:hosting": "node scripts/build-hosting.mjs",
+    "test:hosting": "node --test tests/hosting-config.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

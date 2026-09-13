@@ -38,25 +38,38 @@ export default function App() {
   const [result, setResult] = useState<ParseDocumentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [healthAttempt, setHealthAttempt] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { void getApiHealth().then(setApiOnline); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setApiOnline(null);
+    void getApiHealth(controller.signal).then(online => {
+      if (!controller.signal.aborted) setApiOnline(online);
+    });
+    return () => controller.abort();
+  }, [healthAttempt]);
+
+  function retryConnection() {
+    setApiOnline(null);
+    setHealthAttempt(attempt => attempt + 1);
+  }
 
   function selectFile(nextFile: File) {
     let validationError: string | null = null;
     const hasAcceptedExtension = /\.(pdf|png|jpe?g)$/i.test(nextFile.name);
     if (!ACCEPTED_TYPES.includes(nextFile.type) && !hasAcceptedExtension) validationError = "Choose a PDF, PNG, JPG, or JPEG document.";
-    else if (nextFile.size > MAX_FILE_BYTES) validationError = "This file is larger than the 15 MB upload limit.";
+    else if (nextFile.size > MAX_FILE_BYTES) validationError = "This file is larger than the 5 MB upload limit.";
     else if (nextFile.size === 0) validationError = "This file is empty. Choose another document.";
     setError(validationError);
     setFile(validationError ? null : nextFile);
   }
 
   async function submit() {
-    if (!file) return;
+    if (!file || apiOnline !== true) return;
     setError(null);
     setScreen("processing");
     try {
@@ -66,7 +79,7 @@ export default function App() {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "The document could not be processed.");
       setScreen("upload");
-      void getApiHealth().then(setApiOnline);
+      retryConnection();
     }
   }
 
@@ -113,14 +126,20 @@ export default function App() {
         <button className="brand" type="button" onClick={reset} aria-label="InvoiceParse home">
           <BrandMark /><span><strong>InvoiceParse</strong><small>Document intelligence</small></span>
         </button>
-        <div className={`api-status ${apiOnline === false ? "offline" : ""}`}>
-          <span className="status-dot" />
-          {apiOnline === null ? "Checking parser" : apiOnline ? "Parser ready" : "Parser offline"}
+        <div className={`api-status ${apiOnline === false ? "offline" : ""}`} role="status">
+          {apiOnline === null ? <LoaderCircle className="spinner" size={15} aria-hidden="true" /> : <span className="status-dot" />}
+          {apiOnline === null ? "Starting parser…" : apiOnline ? "Parser ready" : "Parser unavailable"}
         </div>
       </header>
 
       <main>
-        {screen === "upload" && <UploadScreen file={file} error={error} isDragging={isDragging} sampleLoading={sampleLoading} inputRef={inputRef} onFile={selectFile} onRemove={() => { setFile(null); setError(null); if (inputRef.current) inputRef.current.value = ""; }} onSubmit={submit} onSample={loadSample} onDragChange={setIsDragging} />}
+        {apiOnline !== true && <div className="connection-banner" role="status">
+          {apiOnline === null ? <LoaderCircle className="spinner" size={20} aria-hidden="true" /> : <CircleAlert size={20} aria-hidden="true" />}
+          <div><strong>{apiOnline === null ? "Starting the demo…" : "The parser could not be reached."}</strong>
+          <p>{apiOnline === null ? "The first connection can take up to a minute. You can choose a document or explore the samples while you wait." : "Startup may be taking longer, or the connection may be unavailable. Your selected file is still here."}</p></div>
+          {apiOnline === false && <button className="sample-button" type="button" onClick={retryConnection}>Retry connection</button>}
+        </div>}
+        {screen === "upload" && <UploadScreen parserReady={apiOnline === true} file={file} error={error} isDragging={isDragging} sampleLoading={sampleLoading} inputRef={inputRef} onFile={selectFile} onRemove={() => { setFile(null); setError(null); if (inputRef.current) inputRef.current.value = ""; }} onSubmit={submit} onSample={loadSample} onDragChange={setIsDragging} />}
         {screen === "processing" && file && <ProcessingScreen filename={file.name} />}
         {screen === "results" && result && <ResultsScreen result={result} copied={copied} onReset={reset} onCopy={copyJson} onDownload={downloadJson} />}
       </main>
@@ -133,12 +152,13 @@ export default function App() {
 }
 
 interface UploadScreenProps {
+  parserReady: boolean;
   file: File | null; error: string | null; isDragging: boolean; sampleLoading: boolean;
   inputRef: React.RefObject<HTMLInputElement>; onFile: (file: File) => void;
   onRemove: () => void; onSubmit: () => void; onSample: () => void; onDragChange: (dragging: boolean) => void;
 }
 
-function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile, onRemove, onSubmit, onSample, onDragChange }: UploadScreenProps) {
+function UploadScreen({ parserReady, file, error, isDragging, sampleLoading, inputRef, onFile, onRemove, onSubmit, onSample, onDragChange }: UploadScreenProps) {
   return (
     <div className="upload-screen">
       <div className="upload-layout">
@@ -181,7 +201,7 @@ function UploadScreen({ file, error, isDragging, sampleLoading, inputRef, onFile
             {sampleLoading ? <LoaderCircle className="spinner" size={15} /> : <FileCheck2 size={15} />}
             {sampleLoading ? "Loading sample…" : "Use the synthetic sample"}
           </button>
-          <button className="primary-button" type="button" disabled={!file} onClick={onSubmit}>Parse document <ChevronRight size={18} /></button>
+          <button className="primary-button" type="button" disabled={!file || !parserReady} onClick={onSubmit}>Parse document <ChevronRight size={18} /></button>
           <p className="upload-note">Use synthetic or non-sensitive documents. Originals are discarded after processing; extracted results may remain in memory for up to one hour.</p>
         </section>
       </div>

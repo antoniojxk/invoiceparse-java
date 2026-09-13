@@ -25,6 +25,13 @@ jobs:
         run: |
           npm ci
           npm run build
+      - name: Test Hosting configuration
+        run: npm --prefix frontend run test:hosting
+      - name: Validate standalone Hosting build
+        env:
+          # Validation only. Deployment must require a real configured origin.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://api.example.test' }}
+        run: npm --prefix frontend run build:hosting
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -33,3 +40,81 @@ jobs:
           cache: maven
       - name: Run tests
         run: mvn --batch-mode --no-transfer-progress test
+
+  deploy:
+    name: Deploy frontend
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: invoiceparse-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      FIREBASE_HOSTING_SITE_ID: ${{ vars.FIREBASE_HOSTING_SITE_ID }}
+      FIREBASE_CLI_VERSION: ${{ vars.FIREBASE_CLI_VERSION }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in VITE_API_BASE_URL FIREBASE_PROJECT_ID FIREBASE_HOSTING_SITE_ID FIREBASE_CLI_VERSION GCP_WORKLOAD_IDENTITY_PROVIDER GCP_DEPLOY_SERVICE_ACCOUNT; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing production variable: $name"
+              exit 1
+            fi
+          done
+          [[ "$FIREBASE_CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Use an exact Firebase CLI version"; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build and validate production frontend
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run test:hosting
+          npm --prefix frontend run build:hosting
+      - name: Install pinned Firebase CLI
+        run: npm install --global "firebase-tools@$FIREBASE_CLI_VERSION"
+      - name: Skip superseded commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$latest" != "$GITHUB_SHA" ]; then
+            echo "::error::A newer main commit exists; this run will not deploy."
+            exit 1
+          fi
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.FIREBASE_PROJECT_ID }}
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+      - name: Deploy only InvoiceParse
+        run: |
+          firebase target:apply hosting invoiceparse "$FIREBASE_HOSTING_SITE_ID" --project "$FIREBASE_PROJECT_ID"
+          firebase deploy --only hosting:invoiceparse --project "$FIREBASE_PROJECT_ID" --non-interactive
+      - name: Check deployed static files
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://${FIREBASE_HOSTING_SITE_ID}.web.app"
+          curl --fail --silent --show-error --retry 3 --max-time 30 "$base/" -o /tmp/invoiceparse-index.html
+          curl --fail --silent --show-error --retry 3 --max-time 30 "$base/samples/digital-invoice-layout-a.pdf" -o /tmp/invoiceparse-sample.pdf
+          python3 - <<'CHECK'
+          from pathlib import Path
+          assert 'InvoiceParse' in Path('/tmp/invoiceparse-index.html').read_text()
+          assert Path('/tmp/invoiceparse-sample.pdf').read_bytes().startswith(b'%PDF')
+          CHECK

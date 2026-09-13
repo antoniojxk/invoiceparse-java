@@ -22,6 +22,7 @@ server:
   shutdown: graceful
 
 invoiceparse:
+  frontend-origins: ${FRONTEND_ORIGINS:}
   extraction-provider: ${INVOICE_EXTRACTION_PROVIDER:heuristic}
   document-ai:
     project-id: ${GOOGLE_CLOUD_PROJECT:}

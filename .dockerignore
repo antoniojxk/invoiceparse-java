@@ -11,3 +11,11 @@ tmp
 *.log
 ORIGINAL_REQUEST.md
 PROMPT.md
+
+frontend/.env.local
+frontend/.env.*.local
+frontend/.env.hosting
+firebase.json
+
+# Local notes; excluded from version control and build contexts
+.private/

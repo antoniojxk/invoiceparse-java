@@ -247,3 +247,15 @@ td:first-child small { margin-top: 4px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.connection-banner { display: flex; align-items: center; gap: 14px; padding: 18px 22px; margin: 0 0 24px; border: 1px solid #cbd5e1; border-radius: 14px; background: #f1f5f9; color: #334155; }
+.connection-banner > svg { flex-shrink: 0; }
+.connection-banner p { margin: 4px 0 0; font-size: 13px; line-height: 1.6; }
+.connection-banner .sample-button { flex-shrink: 0; width: auto; padding-inline: 16px; margin: 0; }
+@media (max-width: 600px) { .connection-banner { flex-wrap: wrap; padding: 16px; } .connection-banner > div { flex: 1; min-width: 180px; } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+.upload-layout > * { min-width: 0; }
+.dropzone { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.selected-file { min-width: 0; max-width: 100%; }
+@media (max-width: 600px) { .connection-banner .sample-button { width: 100%; } }

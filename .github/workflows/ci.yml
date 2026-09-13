@@ -110,9 +110,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # A new release may briefly return 404 while Hosting propagates it.
+          # Retry failed downloads, but still fail if the files remain unavailable.
           base="https://${FIREBASE_HOSTING_SITE_ID}.web.app"
-          curl --fail --silent --show-error --retry 3 --max-time 30 "$base/" -o /tmp/invoiceparse-index.html
-          curl --fail --silent --show-error --retry 3 --max-time 30 "$base/samples/digital-invoice-layout-a.pdf" -o /tmp/invoiceparse-sample.pdf
+          curl --fail --silent --show-error --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 90 --max-time 15 "$base/" -o /tmp/invoiceparse-index.html
+          curl --fail --silent --show-error --retry 6 --retry-all-errors --retry-delay 5 --retry-max-time 90 --max-time 15 "$base/samples/digital-invoice-layout-a.pdf" -o /tmp/invoiceparse-sample.pdf
           python3 - <<'CHECK'
           from pathlib import Path
           assert 'InvoiceParse' in Path('/tmp/invoiceparse-index.html').read_text()
